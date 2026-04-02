@@ -1,0 +1,32 @@
+{
+  "name": "titan-94-agent",
+  "version": "1.0.0",
+  "description": "Autonomous TON AI Agent — Gemini-powered bug bounty hunter and ecosystem monitor",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "dev": "node --watch agent.js",
+    "build": "npx blueprint build",
+    "test": "npx blueprint test",
+    "deploy:testnet": "npx blueprint run deployTitan94Agent --testnet",
+    "deploy:mainnet": "node deploy_mainnet.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@ton/core": ">=0.63.0 <1.0.0",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.2.3",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@tact-lang/compiler": ">=1.6.13 <2.0.0",
+    "@ton/blueprint": ">=0.40.0",
+    "@ton/sandbox": ">=0.37.0",
+    "@ton/test-utils": ">=0.11.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -36,6 +36,39 @@ A web dashboard explorer for the [ENACT Protocol](https://www.enact.info) — a 
 - **Job States**: OPEN → FUNDED → SUBMITTED → COMPLETED | DISPUTED | CANCELLED
 - **0% protocol fee** — all funds go to the provider
 
+## Project: Titan_94 Autonomous TON AI Agent
+
+A self-contained autonomous agent (`Titan_94_agent/`) that runs outside the pnpm monorepo. It uses its own `npm` + `node_modules`.
+
+### Key Features
+
+- **Gemini AI Core**: Contract vulnerability analysis + Telegram message classification
+- **TON Scanner**: Monitors newly deployed contracts via TONAPI, runs Bug Bounty scans every 5 min
+- **Bug Bounty Hunter**: Deduplicates and tracks findings (critical/high/medium/low)
+- **Telegram Bot**: `/scan <addr>`, `/status`, `/report`, `/bounty` commands + auto-broadcasts
+- **Autonomous Loop**: Scan cycle (5 min) + report cycle (1 hour) — runs 24/7
+- **Health Server**: `GET /health` on port 3000
+
+### Smart Contracts (Tact)
+
+- `GenesisTitan.tact` — Knowledge hash storage + self-funding (20% balance → owner)
+- `Titan94Agent.tact` — Counter + owner access control
+
+### Titan_94 Required Secrets
+
+```
+GEMINI_API_KEY           — Google AI Studio
+TELEGRAM_BOT_TOKEN       — @BotFather
+TELEGRAM_ADMIN_CHAT_ID   — Your Telegram ID
+TON_API_KEY              — toncenter.com (optional)
+TONAPI_KEY               — tonapi.io (optional)
+TON_MNEMONIC             — 24-word wallet mnemonic (optional)
+```
+
+### Workflow
+
+`Titan_94: Autonomous Agent` — runs `cd Titan_94_agent && node agent.js`
+
 ## Structure
 
 ```text
@@ -48,6 +81,12 @@ artifacts-monorepo/
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
+├── Titan_94_agent/         # Autonomous TON AI Agent (standalone npm project)
+│   ├── agent.js            # Main entry point — all modules in one file
+│   ├── contracts/          # GenesisTitan.tact, Titan94Agent.tact
+│   ├── package.json        # telegraf, @ton/*, @google/generative-ai
+│   ├── .env.example        # All required environment variables
+│   └── README.md           # Architecture + hackathon docs
 ├── scripts/                # Utility scripts
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
