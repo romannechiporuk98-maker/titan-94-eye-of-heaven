@@ -1,15 +1,18 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ENACT Protocol Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: jobs
+    description: ENACT job operations
+  - name: stats
+    description: Protocol statistics
 paths:
   /healthz:
     get:
@@ -24,6 +27,119 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List jobs
+      description: List ENACT jobs from the factory contract with optional filters
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, FUNDED, SUBMITTED, COMPLETED, DISPUTED, CANCELLED]
+          description: Filter by job state
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [TON, USDT]
+            default: TON
+          description: Job type (TON or USDT)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobListResponse"
+
+  /jobs/{address}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get job details
+      description: Get full details for a specific ENACT job by contract address
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: TON contract address of the job
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get protocol statistics
+      description: Returns aggregate statistics for the ENACT protocol
+      responses:
+        "200":
+          description: Protocol statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtocolStats"
+
+  /jobs/create-link:
+    post:
+      operationId: createJobLink
+      tags: [jobs]
+      summary: Generate job creation link
+      description: Generate a Tonkeeper deeplink or transaction BOC for creating a new job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "200":
+          description: Transaction link for signing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateJobLinkResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +150,203 @@ components:
       required:
         - status
 
+    JobState:
+      type: string
+      enum: [OPEN, FUNDED, SUBMITTED, COMPLETED, DISPUTED, CANCELLED]
+      description: Current state of the ENACT job
+
+    JobType:
+      type: string
+      enum: [TON, USDT]
+
+    Job:
+      type: object
+      properties:
+        address:
+          type: string
+          description: TON contract address
+        jobId:
+          type: integer
+          description: Sequential job ID from factory
+        state:
+          $ref: "#/components/schemas/JobState"
+        type:
+          $ref: "#/components/schemas/JobType"
+        client:
+          type: string
+          description: Client wallet address
+        provider:
+          type: string
+          nullable: true
+          description: Provider wallet address (null if not taken)
+        evaluator:
+          type: string
+          description: Evaluator wallet address
+        budgetTon:
+          type: string
+          description: Budget in TON (string to avoid float precision issues)
+        budgetUsdt:
+          type: string
+          nullable: true
+          description: Budget in USDT (for Jetton jobs)
+        descriptionHash:
+          type: string
+          description: IPFS/TON Storage hash of job description
+        descriptionText:
+          type: string
+          nullable: true
+          description: Human-readable description (if available)
+        resultHash:
+          type: string
+          nullable: true
+          description: IPFS/TON Storage hash of submitted result
+        resultType:
+          type: integer
+          nullable: true
+          description: Result type code
+        timeout:
+          type: integer
+          description: Job timeout in seconds
+        evalTimeout:
+          type: integer
+          description: Evaluation timeout in seconds
+        createdAt:
+          type: integer
+          description: Unix timestamp of creation
+        submittedAt:
+          type: integer
+          nullable: true
+          description: Unix timestamp when result was submitted
+        tonviewerUrl:
+          type: string
+          description: Link to TON explorer for this contract
+      required:
+        - address
+        - jobId
+        - state
+        - type
+        - client
+        - evaluator
+        - budgetTon
+        - descriptionHash
+        - timeout
+        - evalTimeout
+        - createdAt
+        - tonviewerUrl
+
+    JobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - jobs
+        - total
+        - offset
+        - limit
+
+    ProtocolStats:
+      type: object
+      properties:
+        totalJobs:
+          type: integer
+        totalTonJobs:
+          type: integer
+        totalUsdtJobs:
+          type: integer
+        byState:
+          type: object
+          properties:
+            OPEN:
+              type: integer
+            FUNDED:
+              type: integer
+            SUBMITTED:
+              type: integer
+            COMPLETED:
+              type: integer
+            DISPUTED:
+              type: integer
+            CANCELLED:
+              type: integer
+          required: [OPEN, FUNDED, SUBMITTED, COMPLETED, DISPUTED, CANCELLED]
+        totalVolumeTon:
+          type: string
+          description: Total volume in TON
+        completionRate:
+          type: number
+          description: Percentage of completed jobs (0-100)
+        averageEvalTimeHours:
+          type: number
+          nullable: true
+          description: Average evaluation time in hours
+      required:
+        - totalJobs
+        - totalTonJobs
+        - totalUsdtJobs
+        - byState
+        - totalVolumeTon
+        - completionRate
+
+    CreateJobRequest:
+      type: object
+      properties:
+        evaluator:
+          type: string
+          description: Evaluator wallet address
+        budgetTon:
+          type: string
+          description: Budget in TON
+        description:
+          type: string
+          description: Job description text
+        timeoutHours:
+          type: integer
+          description: Job timeout in hours
+          default: 24
+        evalTimeoutHours:
+          type: integer
+          description: Evaluation timeout in hours
+          default: 24
+        jobType:
+          $ref: "#/components/schemas/JobType"
+      required:
+        - evaluator
+        - budgetTon
+        - description
+
+    CreateJobLinkResponse:
+      type: object
+      properties:
+        tonkeeperLink:
+          type: string
+          description: Tonkeeper deeplink for transaction signing
+        factoryAddress:
+          type: string
+          description: Factory contract address
+        estimatedGas:
+          type: string
+          description: Estimated gas cost in TON
+      required:
+        - tonkeeperLink
+        - factoryAddress
+        - estimatedGas
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message

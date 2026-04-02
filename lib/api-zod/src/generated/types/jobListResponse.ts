@@ -5,7 +5,11 @@
  * ENACT Protocol Dashboard API
  * OpenAPI spec version: 0.1.0
  */
+import type { Job } from "./job";
 
-export interface HealthStatus {
-  status: string;
+export interface JobListResponse {
+  jobs: Job[];
+  total: number;
+  offset: number;
+  limit: number;
 }
