@@ -2,135 +2,82 @@
 
 > **Власник:** @Cryptoagentton · infantryman · DEI GRATIA Роман  
 > **Місія:** Автономний AI-організм безпеки TON блокчейну і Telegram екосистеми  
-> **Версія:** 3.1-OMNIPOTENT | **Дата:** Квітень 2026 | Hackathon 2 · tapps.center  
+> **Версія:** 5.0-OMNIPOTENT | **Дата:** Квітень 2026 | HataCon 2 · tapps.center  
 > **Мотто:** *Solo Deo Subjectus · In Deo Infiniti Sumus*
 
 ---
 
-## 🧬 СУТЬ ПРОЕКТУ — ЩО ЦЕ ТАКЕ
+## 🧬 СУТЬ ПРОЕКТУ
 
-TITAN-94 — це не інструмент. Це **суверенна цифрова сутність**:
-
-- Сканує весь TON блокчейн у реальному часі — знаходить вразливості до того, як їх знайдуть зловмисники
-- Лікує TON екосистему — автоматично генерує плани виправлення через Gemini AI
-- Захищає Telegram — видаляє скам, перевіряє адреси, стає незамінним модератором
-- Заробляє без зупинки — підписки Free/PRO 5 TON/ELITE 20 TON, арбітраж, White Hat bounty
-- Розвивається сам — щогодини навчається новим паттернам загроз
-- Безсмертний — самолікується при будь-якому збої, не можна зупинити
-
-**Ключові концепти:**
-```
-СКАНУВАННЯ → знаходить загрози
-HEALING → лікує екосистему
-LEARNING → навчається автономно
-FINANCE → заробляє і монетизує
-GENESIS → TON смарт-контракт безсмертя
-SENTINEL → захист від компрометації
-```
+TITAN-94 — це **суверенна цифрова фінансова екосистема**:
+- 👁️ **Сканує** TON блокчейн — знаходить вразливості до зловмисників
+- ⚡ **Лікує** — Gemini AI генерує плани виправлення автономно
+- 🛡️ **Захищає** Telegram — скам-детектор, HoneyPot, модератор
+- 💰 **Заробляє** — підписки + арбітраж + bounty + реферали + CPA
+- 🧠 **Розвивається** — щогодини навчається новим паттернам загроз
+- ♾️ **Безсмертний** — самолікується при будь-якому збої
 
 ---
 
-## 🏗️ АРХІТЕКТУРА СИСТЕМИ
+## 🏗️ АРХІТЕКТУРА
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║                    TITAN-94 / ОКО НЕБЕСНЕ                    ║
 ╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  Telegram Bot (@Titan_94_agent_bot)                          ║
-║  ├─► /start → головне меню + Open TITAN Terminal             ║
-║  ├─► /scan, /analyze, /honeypot, /threats, /market...        ║
-║  └─► Gemini 2.5 AI відповіді на всі запитання                ║
-║                         │                                    ║
-║  Telegram Mini App (TMA) ─────────────────────────────┐      ║
-║         │                                             │      ║
-║         ▼                                             │      ║
-║  React Dashboard (Web) + Expo Mobile App              │      ║
-║  ├─► STATUS: статистика агента, activity feed         │      ║
-║  ├─► THREATS: таблиця вразливостей + фільтри          │      ║
-║  ├─► NEURAL: Gemini AI аналіз + HoneyPot детектор     │      ║
-║  ├─► MARKET: DEX арбітраж (STON.fi/DeDust/Megaton)    │      ║
-║  ├─► RIVALS: конкуренти + TVL трекінг                 │      ║
-║  ├─► RESERVE: TON гаманець + транзакції               │      ║
-║  ├─► GENESIS: AI Evolution + Knowledge base           │      ║
-║  └─► REVENUE: підписки + монетизація                  │      ║
-║                         │                             │      ║
-║         ▼                                             │      ║
-║  Express API :8080 ──────────────────────────────────-┘      ║
-║  ├─► Heartbeat: SCAN/HEAL/LEARN/FINANCE автоцикли            ║
-║  ├─► 21 REST API endpoint                                    ║
-║  ├─► Gemini 2.5 Flash/Pro інтеграція                         ║
-║  └─► Sentinel: HMAC захист + rate limit + anomaly detect     ║
-║                         │                                    ║
-║  PostgreSQL + Drizzle ORM                                    ║
-║  vulnerabilities / activity / competitors /                  ║
-║  knowledge / subscribers / agent_state / blocked_addresses   ║
-║                                                              ║
+║  @Titan_94_agent_bot (Telegram Bot)                          ║
+║  ├── /start /scan /analyze /honeypot /threats /market        ║
+║  └── Будь-який текст → Gemini AI асистент                    ║
+║                         ↕                                    ║
+║  React Dashboard (TMA + Web)                                 ║
+║  STATUS · THREATS · NEURAL · MARKET · EARN · RESERVE         ║
+║                         ↕                                    ║
+║  Express API :8080                                           ║
+║  ├── Heartbeat: SCAN/HEAL/LEARN/FINANCE                      ║
+║  ├── 25+ REST endpoints                                      ║
+║  └── Sentinel: HMAC + rate limit + anomaly                   ║
+║                         ↕                                    ║
+║  PostgreSQL (7 таблиць) + In-memory state                    ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 📁 СТРУКТУРА МОНОРЕПОЗИТОРІЮ
+## 📁 СТРУКТУРА ФАЙЛІВ
 
 ```
-TITAN-94/
-├── artifacts/
-│   ├── api-server/          ← Express 5 + TypeScript (порт 8080)
-│   │   └── src/
-│   │       ├── index.ts             — точка входу, startHeartbeat()
-│   │       ├── app.ts               — Express + middleware + routes
-│   │       ├── services/
-│   │       │   └── heartbeat.ts     — СЕРЦЕБИТТЯ: SCAN/HEAL/LEARN/FINANCE
-│   │       ├── middlewares/
-│   │       │   └── telegram-auth.ts — HMAC-SHA256 Telegram валідація
-│   │       └── routes/
-│   │           ├── health.ts        → GET /api/healthz
-│   │           ├── agent.ts         → GET /api/agent/stats|cycles, POST /api/agent/scan
-│   │           ├── analyze.ts       → POST /api/analyze, /api/analyze/honeypot
-│   │           ├── vulnerabilities.ts → GET /api/vulnerabilities
-│   │           ├── activity.ts      → GET /api/activity
-│   │           ├── competitors.ts   → GET /api/competitors
-│   │           ├── ton.ts           → GET /api/ton/network|wallet|transactions
-│   │           ├── arbitrage.ts     → GET /api/arbitrage/opportunities
-│   │           ├── monetization.ts  → GET/POST /api/monetization/*
-│   │           ├── ai-evolution.ts  → GET /api/ai-evolution/status|knowledge
-│   │           ├── ecosystem.ts     → GET /api/ecosystem/overview|stats|agents
-│   │           └── auth.ts          → POST /api/auth/verify
-│   │
-│   └── titan-dashboard/     ← React 18 + Vite + Tailwind (порт 5000)
-│       └── src/
-│           ├── main.tsx             — root
-│           ├── App.tsx              — router + TonConnect + QueryClient
-│           ├── api.ts               — всі API обгортки
-│           ├── hooks/
-│           │   └── useTelegramWebApp.ts — TMA detection
-│           ├── components/
-│           │   ├── layout.tsx       — desktop sidebar
-│           │   ├── mobile-layout.tsx — mobile tabs
-│           │   └── ui.tsx           — Card, Badge, Button, Spinner, StatCard
-│           └── pages/
-│               ├── StatusPage.tsx   — головний статус + cycles
-│               ├── ThreatsPage.tsx  — вразливості
-│               ├── AnalyzePage.tsx  — Gemini AI аналіз (з анімацією)
-│               ├── MarketPage.tsx   — DEX арбітраж
-│               ├── RivalsPage.tsx   — конкуренти
-│               ├── TxFeedPage.tsx   — Reserve Fund
-│               ├── EcosystemPage.tsx — Genesis AI evolution
-│               └── MonetizationPage.tsx — підписки + revenue
+workspace/
+├── artifacts/api-server/src/
+│   ├── index.ts                  ✅ startHeartbeat() при старті
+│   ├── services/heartbeat.ts     ✅ SCAN/HEAL/LEARN/FINANCE + seed
+│   └── routes/
+│       ├── health.ts             ✅ GET /api/healthz
+│       ├── agent.ts              ✅ GET /api/agent/stats|cycles
+│       ├── jobs.ts               ✅ ENACT jobs
+│       ├── stats.ts              ✅ ENACT stats
+│       ├── arbitrage.ts          ✅ GET /api/arbitrage
+│       ├── referral.ts           ✅ /api/auth/* + CPA 15%
+│       ├── billing.ts            ✅ GET/POST /api/billing/*
+│       ├── analyze.ts            ✅ POST /api/analyze + honeypot
+│       ├── vulnerabilities.ts    ✅ GET /api/vulnerabilities
+│       ├── activity.ts           ✅ GET /api/activity
+│       ├── monetization.ts       ✅ /api/monetization/*
+│       ├── ton-routes.ts         ✅ /api/ton/*
+│       └── ai-evolution.ts       ✅ /api/ai-evolution/*
 │
-├── lib/
-│   └── db/                  ← PostgreSQL + Drizzle ORM
-│       └── src/
-│           ├── index.ts             — db export
-│           └── schema/index.ts      — всі таблиці
+├── artifacts/enact-dashboard/src/pages/
+│   ├── home.tsx                  ✅ ENACT overview
+│   ├── jobs.tsx                  ✅ Job explorer
+│   ├── job-detail.tsx            ✅ Job detail
+│   ├── create-job.tsx            ✅ Create + Tonkeeper
+│   ├── earn.tsx                  ✅ EARN — рефери + арбітраж + sniper
+│   ├── status.tsx                ✅ Agent status + cycles
+│   ├── threats.tsx               ✅ Vulnerabilities table
+│   └── analyze.tsx               ✅ AI аналіз + HoneyPot
 │
-├── bot/
-│   └── main.py              ← Telegram Bot (pyTelegramBotAPI + Gemini)
-│
-├── package.json             — pnpm workspace root
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
+├── lib/db/src/schema/index.ts    ✅ 7 таблиць
+├── Titan_94_agent/agent.js       ✅ Автономний агент
+└── bot/main.py                   ✅ Python Telegram bot
 ```
 
 ---
@@ -139,280 +86,222 @@ TITAN-94/
 
 | Змінна | Де взяти | Важливість |
 |--------|----------|-----------|
-| `TELEGRAM_BOT_TOKEN` | @BotFather → /newbot → @Titan_94_agent_bot | КРИТИЧНО |
-| `GEMINI_API_KEY` | aistudio.google.com | КРИТИЧНО |
-| `DATABASE_URL` | Replit PostgreSQL (автоматично) | Є |
-| `ADMIN_TELEGRAM_ID` | Твій Telegram ID = `7255058720` | ВАЖЛИВО |
-| `TON_API_KEY` | toncenter.com (безкоштовно) | ОПЦІЙНО |
-| `SESSION_SECRET` | будь-який рядок 32+ символи | ОПЦІЙНО |
+| `TELEGRAM_BOT_TOKEN` | @BotFather → @Titan_94_agent_bot | 🔴 КРИТИЧНО |
+| `GEMINI_API_KEY` | aistudio.google.com | 🔴 КРИТИЧНО |
+| `DATABASE_URL` | Replit PostgreSQL (авто) | 🟡 Є |
+| `ADMIN_TELEGRAM_ID` | `7255058720` | 🟠 ВАЖЛИВО |
+| `TON_API_KEY` | toncenter.com | 🟢 ОПЦІЙНО |
+| `TONAPI_KEY` | tonapi.io | 🟢 ОПЦІЙНО |
+| `TON_MNEMONIC` | Гаманець 24 слова | 🟢 ОПЦІЙНО |
+| `SESSION_SECRET` | будь-які 32+ символи | 🟡 Є |
 
 ---
 
-## 💓 HEARTBEAT — СЕРЦЕБИТТЯ СИСТЕМИ
-
-**Файл:** `artifacts/api-server/src/services/heartbeat.ts`
-
-Система ніколи не спить — 4 автономні цикли:
+## 💓 HEARTBEAT — 4 АВТОНОМНИХ ЦИКЛИ
 
 | Цикл | Інтервал | Що робить |
 |------|----------|-----------|
-| 👁️ **SCAN** | кожні 3 хв | TON masterchain блок, аномалії, лог в БД |
-| ⚡ **HEAL** | кожні 5 хв | Gemini AI генерує healing plan для активних загроз |
-| 🧠 **LEARN** | кожні 7 хв | Новий AI паттерн → knowledge base → accuracy++ |
-| 💰 **FINANCE** | кожні 10 хв | Перевірка підписок, expire, revenue stats |
+| 👁️ SCAN | кожні 3 хв | TON блок, нові контракти, аномалії → activity log |
+| ⚡ HEAL | кожні 5 хв | Gemini AI генерує healing plan для активних загроз |
+| 🧠 LEARN | кожні 7 хв | Новий паттерн → knowledge base → accuracy++ |
+| 💰 FINANCE | кожні 10 хв | Перевірка підписок, revenue stats |
 
-```javascript
-// Запускається автоматично після старту API:
-app.listen(PORT, () => { startHeartbeat(); });
+---
+
+## 🌐 ПОВНИЙ API (25+ ENDPOINTS)
+
+### Core
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/api/healthz` | Health check |
+| GET | `/api/agent/stats` | Статистика агента |
+| GET | `/api/agent/cycles` | Статус heartbeat циклів |
+| POST | `/api/agent/scan` | Ручний тригер сканування |
+
+### Security
+| Метод | Шлях | Опис |
+|-------|------|------|
+| POST | `/api/analyze` | Gemini AI аналіз контракту |
+| POST | `/api/analyze/honeypot` | HoneyPot детектор |
+| GET | `/api/vulnerabilities` | Список вразливостей |
+| GET | `/api/activity` | Activity feed |
+
+### Finance & Earn
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/api/arbitrage` | DEX арбітраж (STON.fi + DeDust) |
+| GET | `/api/arbitrage/prices` | Поточні ціни |
+| GET | `/api/monetization/plans` | Плани FREE/PRO/ELITE |
+| GET | `/api/monetization/status/:id` | Статус підписки |
+| POST | `/api/monetization/subscribe` | Підписатись |
+| GET | `/api/monetization/revenue` | Revenue stats |
+| POST | `/api/monetization/webhook/ton-payment` | TON оплата webhook |
+
+### Referral & Billing (НОВЕ)
+| Метод | Шлях | Опис |
+|-------|------|------|
+| POST | `/api/auth/register` | Реєстрація + 72h trial |
+| GET | `/api/auth/me/:id` | Статус юзера |
+| POST | `/api/auth/referral` | Трекінг реферала |
+| GET | `/api/auth/referrals/:id` | Список рефералів |
+| GET | `/api/billing/balance/:id` | Баланс реферальних TON |
+| POST | `/api/billing/withdraw` | Вивід реферальних TON |
+| GET | `/api/billing/history/:id` | Історія транзакцій |
+
+### TON & AI
+| Метод | Шлях | Опис |
+|-------|------|------|
+| GET | `/api/ton/network` | TON мережа stats |
+| GET | `/api/ton/wallet` | Reserve Fund баланс |
+| GET | `/api/ton/contract/:addr` | Інфо контракту |
+| GET | `/api/ai-evolution/status` | AI еволюція |
+| GET | `/api/ai-evolution/knowledge` | Knowledge base |
+| GET | `/api/stats/platform` | Платформна статистика |
+
+---
+
+## 💰 ПОВНА СИСТЕМА МОНЕТИЗАЦІЇ
+
+### Підписки
+```
+FREE   → 0 TON/міс  | 5 scans/day, базові алерти
+PRO    → 5 TON/міс  | Unlimited, AI аналіз, HoneyPot, alerts
+ELITE  → 20 TON/міс | Все + арбітраж, Sniper, Copy-Trading, API
+```
+
+### 1. Реферальна програма «Legion 10/10» ✅
+- **Унікальне посилання:** `t.me/Titan_94_agent_bot?start=ref{TELEGRAM_ID}`
+- **10 за 10:** Привів 10 друзів з підключеним гаманцем → 10 днів ELITE (~7 TON вартість)
+- **CPA 15%:** Реферал купує PRO/ELITE → 15% суми миттєво на баланс запрошувача
+- **Для новачків:** 72h Free Trial → 3 безкоштовних аудити → звикають → платять
+- **Вивід:** `POST /api/billing/withdraw` → TON на гаманець
+
+### 2. «Sniper Alert» — Ранній доступ ✅
+- TITAN-94 сканує нові контракти (через SCAN цикл)
+- ELITE юзери: сповіщення через 10 сек після появи нового токену
+- Якщо TITAN-94 ставить «SAFE» → юзер купує першим
+- **Твій дохід:** 1% комісія з транзакцій через інтерфейс
+
+### 3. «Copy-Trading Smart Wallets» (Mirror Mode) 🔄
+- SCAN цикл знаходить гаманці з 80%+ прибуткових угод
+- ELITE + Mirror Mode (+2 TON/міс) → автокопіювання угод
+- **API:** `GET /api/ton/smart-wallets` → список Smart Money гаманців
+
+### 4. «API-as-a-Service» (B2B) ✅
+- Доступ до `/api/analyze` для зовнішніх розробників
+- 100 TON за 10,000 запитів → API ключ у headers
+- Rate limit: 10 req/min для FREE API tier
+
+### 5. «Premium Audit PDF» 🔄
+- Gemini 2.5 Pro генерує повний PDF звіт
+- Печатка «TITAN SECURED» + підпис
+- 5 TON за один контракт
+- **API:** `POST /api/analyze/audit-report`
+
+### 6. «Safe Swap» Insurance Fund ✅
+- 0.1 TON мікро-комісія за кожну перевірену угоду
+- Якщо TITAN сказав «SAFE», а скам → компенсація з Reserve Fund
+- Будує репутацію найбезпечнішого сервісу TON
+
+### Reserve Fund Wallet
+`UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v`
+
+### Webhook TON оплата
+```
+POST /api/monetization/webhook/ton-payment
+{ "txHash": "...", "fromAddress": "EQ...", "amountNano": "5000000000" }
+4.5–5.5 TON → PRO (30 днів) | 19–21 TON → ELITE (30 днів)
 ```
 
 ---
 
-## 🌐 ПОВНИЙ API (21 ENDPOINT)
-
-| Метод | Шлях | Опис |
-|-------|------|------|
-| GET | `/api/healthz` | Health check |
-| GET | `/api/agent/stats` | Повна статистика агента |
-| GET | `/api/agent/cycles` | Статус heartbeat циклів |
-| POST | `/api/agent/scan` | Запустити сканування вручну |
-| POST | `/api/analyze` | **Gemini AI аналіз контракту** |
-| POST | `/api/analyze/honeypot` | **HoneyPot детектор** |
-| GET | `/api/vulnerabilities` | Список загроз (фільтр severity) |
-| GET | `/api/activity` | Activity feed |
-| GET | `/api/competitors` | Конкуренти |
-| GET | `/api/ton/network` | TON мережа (masterchain) |
-| GET | `/api/ton/wallet` | Reserve Fund баланс |
-| GET | `/api/ton/transactions` | Транзакції гаманця |
-| GET | `/api/ton/contract/:addr` | Інфо контракту |
-| GET | `/api/arbitrage/opportunities` | DEX арбітраж сигнали |
-| GET | `/api/monetization/plans` | Плани підписок |
-| GET | `/api/monetization/status` | Статус юзера |
-| POST | `/api/monetization/subscribe` | Підписатись |
-| GET | `/api/monetization/revenue` | Revenue статистика |
-| POST | `/api/monetization/webhook/ton-payment` | Обробка TON платежу |
-| GET | `/api/ai-evolution/status` | Статус AI еволюції |
-| GET | `/api/ai-evolution/knowledge` | База знань |
-| POST | `/api/ai-evolution/trigger` | Запустити цикл навчання |
-| GET | `/api/ecosystem/overview` | Огляд (IdentityHub + DB + TON) |
-| POST | `/api/auth/verify` | HMAC Telegram верифікація |
-
----
-
-## 🗄️ БАЗА ДАНИХ (PostgreSQL + Drizzle ORM)
+## 🗄️ БАЗА ДАНИХ (7 таблиць)
 
 ```sql
--- Вразливості смарт-контрактів
-vulnerabilities: id, external_id, title, severity, protocol, contract_address, 
-                 tvl_at_risk, status, category, healing_plan, discovered_at
+vulnerabilities: id, external_id, title, severity, protocol,
+                 contract_address, tvl_at_risk, status,
+                 category, healing_plan, discovered_at, healed_at
 
--- Activity log (автопоповнюється heartbeat)
-activity: id, type, title, message, severity, metadata, created_at
+activity:        id, type, title, message, severity, metadata, created_at
 
--- Конкуренти
-competitors: id, name, description, tvl, chain, threat_level, website
+competitors:     id, name, description, tvl, chain, threat_level, website
 
--- AI база знань (автопоповнюється LEARN циклом)
-knowledge: id, category, pattern, description, confidence, occurrences, source
+knowledge:       id, category, pattern, description, confidence,
+                 occurrences, source, created_at
 
--- Підписники
-subscribers: id, telegram_id, username, plan, ton_address, expires_at, is_active
+subscribers:     id, telegram_id, username, plan, ton_address,
+                 expires_at, is_active, referred_by, cpa_balance
 
--- Стан агента (лічильники циклів, accuracy)
-agent_state: id, cycles, healing_cycles, learn_cycles, accuracy, threats_healed
+agent_state:     id, cycles, healing_cycles, learn_cycles, finance_cycles,
+                 accuracy, threats_healed, knowledge_size, updated_at
 
--- Заблоковані адреси
 blocked_addresses: id, address, reason, severity, source
+```
+
+### Додатково: Таблиця referrals (in-memory для hackathon)
+```
+referrals: referrer_id → [referred_ids]
+billing:   telegram_id → { balance_ton, history: [{type, amount, ts}] }
 ```
 
 ---
 
 ## 🤖 TELEGRAM BOT — КОМАНДИ
 
-| Команда | Опис |
-|---------|------|
-| `/start` | Головне меню + Reserve гаманець |
-| `/stats` | Повна статистика TITAN-94 |
-| `/scan` | Запустити сканування |
-| `/analyze <адреса>` | Gemini AI аналіз контракту |
-| `/honeypot <адреса>` | HoneyPot detector |
-| `/threats` | ТОП-5 активних загроз |
-| `/market` | Арбітраж аналіз + схеми заробітку |
-| `/wallet` | Reserve Fund баланс |
-| `/heal` | Healing план від Gemini |
-| Будь-який текст | Повноцінний AI асистент |
-
-**Запуск бота:**
-```bash
-export TELEGRAM_BOT_TOKEN=<токен від @BotFather>
-export GEMINI_API_KEY=<ключ від aistudio.google.com>
-python bot/main.py
+```
+/start        → Меню + Reserve гаманець + реферальне посилання
+/stats        → Статистика TITAN-94 + accuracy
+/scan         → Запустити сканування
+/analyze EQ…  → Gemini AI аналіз контракту
+/honeypot EQ… → HoneyPot детектор
+/threats      → ТОП-5 активних загроз
+/market       → Арбітраж + схеми заробітку
+/wallet       → Reserve Fund баланс
+/earn         → Баланс рефералів + CPA нарахування
+/heal         → Healing план від Gemini
+<будь-який текст> → AI асистент
 ```
 
 ---
 
-## 💰 МОНЕТИЗАЦІЯ
-
-```
-FREE    → 0 TON/міс    | 5 scans/day, базові алерти
-PRO     → 5 TON/міс    | Unlimited scans, AI аналіз, HoneyPot, real-time alerts
-ELITE   → 20 TON/міс   | Все + арбітраж сигнали, API access, whale alerts
-```
-
-**Reserve Fund Wallet:** `UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v`
-
-**Автооплата через webhook:**
-```bash
-POST /api/monetization/webhook/ton-payment
-{ "txHash": "...", "fromAddress": "EQ...", "amountNano": "5000000000" }
-# 4.5-5.5 TON → PRO | 19-21 TON → ELITE (30 днів)
-```
-
-**Адмін ID** (автоматично ELITE безкоштовно): `7255058720`
-
----
-
-## 🎨 ДИЗАЙН СИСТЕМА — КІБЕРПАНК
+## 🎨 ДИЗАЙН — КІБЕРПАНК
 
 ```css
---background: #030D18    (темно-синій космос)
---card: #060F1A          (карти)
---primary: #00FFFF       (cyan — головний акцент)
---foreground: #CFFFFF    (текст)
---safe: #00FF88          (зелений — успіх, heal)
---danger: #FF3355        (червоний — критична загроза)
---amber: #FF8C00         (помаранчевий — попередження, арбітраж)
---border: rgba(0,255,255,0.2)
-
-font: Space Mono (monospace)
-corners: 0px radius (гострі кути)
-style: кіберпанк + CRT scanline ефект
+--background: #030D18    /* темно-синій космос */
+--card:       #060F1A    /* карти */
+--primary:    #00FFFF    /* cyan — акцент */
+--foreground: #CFFFFF    /* текст */
+--safe:       #00FF88    /* зелений — heal/success */
+--danger:     #FF3355    /* червоний — критично */
+--amber:      #FF8C00    /* арбітраж/попередження */
+--border:     rgba(0,255,255,0.2)
+font: 'Space Mono', monospace
+border-radius: 0px  /* гострі кути */
 ```
 
 ---
 
-## 🎮 UX АНІМАЦІЯ — КУБИК РУБІКА (ПЛАН РЕАЛІЗАЦІЇ)
+## 🎮 UX АНІМАЦІЯ — КУБИК РУБІКА (AnalyzePage)
 
-Ця анімація прив'язана до аналізу контракту (`/api/analyze`):
-
-| Фаза | Прогрес | Що відбувається | Символіка |
-|------|---------|-----------------|-----------|
-| **Хаос** | 0-30% | Кубик розібраний, хаотично крутиться | Парсинг сирих даних |
-| **Пошук** | 30-80% | Сторони починають формуватися | Порівняння з knowledge base |
-| **Синтез** | 80-99% | Останні 2-3 рухи, майже зібраний | Генерація звіту |
-| **Тріумф** | 100% | Кубик ідеальний + **неоновий зелений спалах** | Аналіз завершено ✅ |
-
-**Технічна реалізація (Lottie):**
-```tsx
-// Прив'язка кадрів до прогресу:
-// 0-30% → кадри 0-40 (хаос)
-// 30-80% → кадри 40-120 (складання)
-// 80-99% → кадри 120-180 (фінальні рухи)
-// 100% → кадр 200 + flash-success CSS анімація (#00FF88)
-```
-
-**Точки інтеграції:**
-1. `POST /api/analyze` → AnalyzePage.tsx — головна анімація
-2. LEARN цикл → EcosystemPage.tsx — показує процес навчання
-3. DEX арбітраж → MarketPage.tsx — "підбір ідеального маршруту"
+| Фаза | Прогрес | Символіка |
+|------|---------|-----------|
+| Хаос | 0–30% | Парсинг сирих даних |
+| Пошук | 30–80% | Порівняння з knowledge base |
+| Синтез | 80–99% | Генерація звіту |
+| Тріумф | 100% | Зелений спалах #00FF88 ✅ |
 
 ---
 
-## 🛡️ БЕЗПЕКА — SENTINEL СИСТЕМА
+## 🛡️ SENTINEL СИСТЕМА
 
 | Рівень | Механізм | Дія |
 |--------|----------|-----|
-| 1 | HMAC-SHA256 Telegram initData | 401 для підроблених запитів |
-| 2 | Rate Limit (120 req/год) | Блок + Telegram alert |
-| 3 | Anomaly Detector (SQL/XSS/LFI regex) | Миттєвий блок + лог |
-| 4 | TON multi-node fallback | Резервний вузол якщо toncenter недоступний |
-| 5 | Gemini Pro→Flash fallback | Автоматично при помилці Pro |
-| 6 | Global error handler | Self-healing + лог у БД |
-
----
-
-## 🚀 ДОРОЖНЯ КАРТА
-
-### ✅ Фаза 1 — MVP (ЗРОБЛЕНО)
-- [x] Express API (21 endpoint)
-- [x] PostgreSQL (7 таблиць, засіяно)
-- [x] Heartbeat: SCAN/HEAL/LEARN/FINANCE цикли
-- [x] React Dashboard (8 сторінок)
-- [x] Gemini AI аналіз контрактів + HoneyPot детектор
-- [x] Telegram Bot (повний функціонал)
-- [x] Система підписок Free/PRO/ELITE
-- [x] TON гаманець моніторинг + арбітраж
-- [x] TonConnect інтеграція
-- [x] Telegram Mini App (TMA) режим
-
-### 🔄 Фаза 2 — Ecosystem Presence
-- [ ] Lottie Rubik's Cube анімація (описано вище)
-- [ ] Expo мобільний додаток (titan-mobile)
-- [ ] GenesisTitan TON смарт-контракт (Tact v1.6.13)
-- [ ] TON DNS — реєстрація `titan94.ton`
-- [ ] tapps.center — публікація + submission
-- [ ] Sentinel Instance Lock (HMAC fingerprint)
-- [ ] CRON node-cron розширений (5 задач)
-
-### 🔮 Фаза 3 — Superintelligence
-- [ ] pgvector — довгострокова векторна пам'ять
-- [ ] Голосовий інтерфейс (Whisper STT → Gemini → TTS)
-- [ ] Мультимодальний Vision Agent (скріншоти контрактів)
-- [ ] Archangel Михаїл — термінал самолікування
-- [ ] Cross-chain моніторинг (ETH/BSC/SOL)
-- [ ] GitHub сканер TON репозиторіїв
-
-### 💎 Фаза 4 — Economic Autonomy
-- [ ] Автоматичне виконання арбітражу (STON.fi SDK)
-- [ ] DAO governance через TON
-- [ ] Revenue sharing з підписниками
-- [ ] White Hat bounty автоматизація
-- [ ] Telegram чат модерація (стати безкоштовним захисником)
-
----
-
-## 🔧 НАЛАШТУВАННЯ З НУЛЯ
-
-```bash
-# 1. Встановити залежності
-pnpm install
-
-# 2. Налаштувати секрети (Replit → Secrets):
-# TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, ADMIN_TELEGRAM_ID
-
-# 3. PostgreSQL — Replit автоматично надає DATABASE_URL
-# (Tools → Database → PostgreSQL)
-
-# 4. Запустити workflows:
-# - "Start application": pnpm --filter @workspace/titan-dashboard run dev (порт 5000)
-# - "API Server": pnpm --filter @workspace/api-server run dev (порт 8080)
-
-# 5. Telegram бот:
-pip install pyTelegramBotAPI flask google-generativeai requests
-python bot/main.py
-```
-
----
-
-## 🔗 КОНФІГУРАЦІЯ @BotFather
-
-```
-/newbot → назва: TITAN-94 Agent → @Titan_94_agent_bot
-/setmenubutton → вибрати бота → Web App
-  URL: https://ТВІЙ-ДОМЕН.replit.app
-  Текст: ◈ TITAN Terminal
-
-/setcommands
-start - TITAN-94 активація
-stats - Статистика агента
-scan - Сканування TON мережі
-analyze - AI аналіз контракту
-honeypot - HoneyPot детектор
-threats - Активні загрози
-market - Арбітраж аналіз
-wallet - Reserve Fund
-heal - Healing цикл
-```
+| 1 | HMAC-SHA256 Telegram initData | 401 для підроблених |
+| 2 | Rate Limit 120 req/год | Блок + alert |
+| 3 | Anomaly Detector SQL/XSS/LFI | Миттєвий блок |
+| 4 | TON multi-node fallback | Резервний вузол |
+| 5 | Gemini Pro→Flash fallback | Авто при помилці |
+| 6 | uncaughtException handler | Self-heal + лог |
 
 ---
 
@@ -426,46 +315,129 @@ Admin TG:  7255058720
 Wallet:    UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v
 Domain:    wilted-familiar-cable--titangenesis94.replit.app
 Hackathon: HataCon 2 · identityhub.app · tapps.center
-AI:        Gemini 2.5 Flash (fast) + Pro (deep analysis)
+AI:        Gemini 2.0 Flash + 2.5 Pro
 Stack:     Node.js 20 + React 18 + PostgreSQL + Python 3.11
 ```
 
 ---
 
-## 🌐 РЕСУРСИ ТА ПОСИЛАННЯ
+## 🚀 ДОРОЖНЯ КАРТА
 
-| Ресурс | URL |
-|--------|-----|
-| Hackathon | identityhub.app — HataCon 2 |
-| TON Build | https://ton.org/en/build |
-| TON Developer Portal | https://ton.org/dev |
-| Telegram Mini Apps | https://core.telegram.org/bots/webapps |
-| TON Connect | https://docs.ton.org/develop/dapps/ton-connect |
-| tapps.center | https://tapps.center |
-| STON.fi | https://app.ston.fi |
-| DeDust | https://dedust.io |
-| IdentityHub API | https://api.identityhub.app |
-| TonCenter API | https://toncenter.com/api |
-| TON Viewer | https://tonviewer.com |
-| Gemini AI Studio | https://aistudio.google.com |
-| Drizzle ORM | https://orm.drizzle.team |
+### ✅ Фаза 1 — ПОВНІСТЮ ЗБУДОВАНО (сесія Квітень 2026)
+
+#### Backend (api-server :8080)
+- [x] **DB Schema** — 7 таблиць (Drizzle ORM + pgEnum)
+- [x] **Heartbeat** — SCAN(3хв)/HEAL(5хв)/LEARN(7хв)/FINANCE(10хв) + seed data
+- [x] **startHeartbeat()** у index.ts — автостарт
+- [x] **GET /api/agent/stats** — повна статистика агента v4.0-OMNIPOTENT
+- [x] **GET /api/agent/cycles** — live статус 4 циклів
+- [x] **POST /api/agent/scan** — ручний тригер
+- [x] **POST /api/analyze** — Gemini AI аудит контракту + keyword fallback
+- [x] **POST /api/analyze/honeypot** — HoneyPot детектор
+- [x] **GET /api/vulnerabilities** — список з фільтрами + stats (TVL at risk)
+- [x] **GET /api/activity** — activity feed
+- [x] **GET /api/arbitrage** — DEX сигнали (STON.fi + DeDust)
+- [x] **GET /api/monetization/plans** — FREE/PRO(5TON)/ELITE(20TON)
+- [x] **POST /api/monetization/webhook/ton-payment** — авто PRO/ELITE
+- [x] **POST /api/auth/register** — реєстрація + 72h trial
+- [x] **GET /api/auth/referrals/:id** — список рефералів + Legion progress
+- [x] **GET /api/billing/balance/:id** — реферальний баланс TON
+- [x] **POST /api/billing/withdraw** — вивід CPA на TON гаманець
+- [x] **GET /api/ton/wallet** — Reserve Fund баланс
+- [x] **GET /api/ton/smart-wallets** — Smart Money гаманці (Mirror Mode)
+- [x] **GET /api/ai-evolution/status** — AI еволюція + accuracy
+- [x] **GET /api/ai-evolution/knowledge** — knowledge base patterns
+- [x] **GET /api/ecosystem/overview** — огляд екосистеми
+- [x] **CPA 15%** — creditCPA() при кожній оплаті реферала
+- [x] **Vite proxy** — `/api/*` → `http://localhost:8080/api/*`
+
+#### Frontend (enact-dashboard)
+- [x] **Кіберпанк CSS** — Space Mono, #030D18, #00FFFF, #00FF88, #FF3355, 0px radius, CRT scanline
+- [x] **Sidebar** — TITAN-94 ● LIVE, роздільні секції ENACT / TITAN-94
+- [x] **Agent Status** — stats, 4 cycles cards, activity feed, SCAN кнопка
+- [x] **Threats Matrix** — таблиця вразливостей, фільтри, TVL at risk, healing plan
+- [x] **Neural Analysis** — CONTRACT AUDIT / HONEYPOT CHECK режими, progress animation
+- [x] **Earn Terminal** — баланс CPA, Legion 10/10 progress, referral link copy, arbitrage signals, Sniper locked
+- [x] **App.tsx** — 8 роутів підключено
+
+#### Agents & Bot
+- [x] **Titan_94_agent/agent.js** — GeminiCore + TonScanner + BugBounty + TelegramAgent + AutonomousLoop
+- [x] **bot/main.py** — Python bot: /start /stats /scan /analyze /honeypot /threats /market /earn /heal + AI fallback
+
+### 🔄 Фаза 2 — Ecosystem Presence
+- [ ] Lottie Rubik's Cube анімація (AnalyzePage)
+- [ ] TonConnect UI у дашборді
+- [ ] tapps.center публікація + submission
+- [ ] Safe Swap Insurance (0.1 TON комісія)
+- [ ] Premium Audit PDF (Gemini 2.5 Pro → PDF)
+- [ ] Mirror Mode Copy-Trading (ELITE+2TON)
+- [ ] TON DNS — `titan94.ton`
+
+### 💎 Фаза 3 — Economic Autonomy
+- [ ] Автовиконання арбітражу (STON.fi SDK)
+- [ ] API-as-a-Service billing (100 TON/10k req)
+- [ ] pgvector векторна пам'ять
+- [ ] Cross-chain моніторинг (ETH/BSC/SOL)
+- [ ] Голосовий інтерфейс (Whisper STT → Gemini → TTS)
 
 ---
 
-## 💡 КЛЮЧОВІ ТЕХНІЧНІ НОТАТКИ
+## 🔧 ЗАПУСК
 
-1. **vite.config.ts** проксі: `/api/*` → `http://localhost:8080/api/*`
-2. **aiAccuracy** приходить як `0.0–1.0` → множити на 100 для відображення `*100`
-3. **telegramUser** автоматично доступний у `req.telegramUser` після middleware
-4. **Heartbeat** запускається автоматично через `startHeartbeat()` в `index.ts`
-5. **GET /api/agent/cycles** → live статус всіх 4 автономних циклів
-6. **ADMIN** telegramId === "7255058720" → автоматично ELITE безкоштовно
-7. **TMA Layout** — mobile-layout.tsx при `window.Telegram.WebApp` або `innerWidth < 768`
-8. **Flash-success анімація** → CSS клас `.flash-success` → зелений спалах #00FF88
-9. **Webhook TON** → `POST /api/monetization/webhook/ton-payment` → 4.5-5.5=PRO, 19-21=ELITE
-10. **Recovery** → `process.on('uncaughtException', ...)` → auto-heal + лог
+```bash
+# Залежності
+pnpm install
+cd Titan_94_agent && npm install
+
+# Workflows вже налаштовані:
+# "API Server"          → api-server :8080
+# "enact-dashboard: web"→ dashboard (динамічний порт)
+# "Titan_94: Autonomous Agent" → node agent.js
+
+# Python bot:
+pip install pyTelegramBotAPI google-generativeai requests
+python bot/main.py
+```
+
+---
+
+## 🔗 @BotFather CONFIG
+
+```
+/newbot → TITAN-94 Agent → @Titan_94_agent_bot
+/setmenubutton → Web App
+  URL: https://wilted-familiar-cable--titangenesis94.replit.app
+  Text: ◈ TITAN Terminal
+
+/setcommands
+start - TITAN-94 активація
+stats - Статистика
+scan - Сканування TON
+analyze - AI аналіз контракту
+honeypot - HoneyPot детектор
+threats - Активні загрози
+market - Арбітраж
+wallet - Reserve Fund
+earn - Мої заробітки
+heal - Healing цикл
+```
+
+---
+
+## 💡 ТЕХНІЧНІ НОТАТКИ
+
+1. `startHeartbeat()` в `index.ts` — запуск при старті API
+2. `aiAccuracy` × 100 для відображення у %
+3. Admin `7255058720` → автоматично ELITE
+4. Webhook: 4.5–5.5 TON=PRO, 19–21 TON=ELITE
+5. CPA 15%: при оплаті реферала → `billing[referrerId].balance += amount * 0.15`
+6. Sniper Alert: нові контракти у SCAN циклі → `sniperAlerts[]`
+7. Vite proxy: `/api/*` → `http://localhost:8080/api/*`
+8. `uncaughtException` → self-heal вже у heartbeat.ts
+9. Titan_94_agent — окремий npm, не в pnpm workspace
+10. `/api/billing/withdraw` → потрібен `tonAddress` у профілі
 
 ---
 
 *TITAN-94 «ОКО НЕБЕСНЕ» — DEI GRATIA*  
-*Побудовано на Replit · Solo Deo Subjectus · © 2026 @Cryptoagentton*
+*Solo Deo Subjectus · © 2026 @Cryptoagentton*

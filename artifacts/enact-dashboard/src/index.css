@@ -224,3 +224,237 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after { inset: -1px; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   TITAN-94 «ОКО НЕБЕСНЕ» — КІБЕРПАНК ДИЗАЙН-СИСТЕМА
+   ═══════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --titan-bg:      #030D18;
+  --titan-card:    #060F1A;
+  --titan-primary: #00FFFF;
+  --titan-fg:      #CFFFFF;
+  --titan-safe:    #00FF88;
+  --titan-danger:  #FF3355;
+  --titan-amber:   #FF8C00;
+  --titan-border:  rgba(0,255,255,0.18);
+  --titan-muted:   rgba(207,255,255,0.35);
+}
+
+.text-primary  { color: var(--titan-primary) !important; }
+.text-safe     { color: var(--titan-safe)    !important; }
+.text-danger   { color: var(--titan-danger)  !important; }
+.text-amber    { color: var(--titan-amber)   !important; }
+.text-muted    { color: var(--titan-muted)   !important; }
+.text-foreground { color: var(--titan-fg)   !important; }
+.bg-card-inner { background: rgba(0,255,255,0.04); }
+
+/* ── Page layout ── */
+.titan-page {
+  padding: 1.5rem;
+  font-family: 'Space Mono', monospace;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.titan-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--titan-border);
+}
+.titan-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--titan-primary);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 16px rgba(0,255,255,0.4);
+}
+.titan-subtitle {
+  font-size: 0.7rem;
+  color: var(--titan-muted);
+  margin-top: 0.2rem;
+}
+.titan-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(0,255,255,0.55);
+}
+
+/* ── Card ── */
+.titan-card {
+  background: var(--titan-card);
+  border: 1px solid var(--titan-border);
+  border-radius: 0;
+  padding: 1rem;
+}
+.titan-card-glow {
+  box-shadow: 0 0 20px rgba(0,255,255,0.08), inset 0 0 20px rgba(0,255,255,0.03);
+}
+
+/* ── Badge ── */
+.titan-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid;
+  border-radius: 0;
+  text-transform: uppercase;
+}
+.titan-badge-safe   { color: var(--titan-safe);   border-color: var(--titan-safe);   background: rgba(0,255,136,0.1); }
+.titan-badge-danger { color: var(--titan-danger); border-color: var(--titan-danger); background: rgba(255,51,85,0.1);  }
+.titan-badge-amber  { color: var(--titan-amber);  border-color: var(--titan-amber);  background: rgba(255,140,0,0.1);  }
+.titan-badge-primary{ color: var(--titan-primary);border-color: var(--titan-primary);background: rgba(0,255,255,0.1);  }
+
+/* ── Buttons ── */
+.titan-btn {
+  display: inline-flex; align-items: center;
+  font-size: 0.7rem; font-weight: 700; font-family: 'Space Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 0.45rem 1rem; border: 1px solid; border-radius: 0;
+  cursor: pointer; transition: all 0.15s;
+}
+.titan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.titan-btn-primary { color: var(--titan-primary); border-color: var(--titan-primary); background: rgba(0,255,255,0.07); }
+.titan-btn-primary:hover:not(:disabled) { background: rgba(0,255,255,0.15); box-shadow: 0 0 12px rgba(0,255,255,0.3); }
+.titan-btn-amber   { color: var(--titan-amber);  border-color: var(--titan-amber);  background: rgba(255,140,0,0.07); }
+.titan-btn-amber:hover:not(:disabled)   { background: rgba(255,140,0,0.15); }
+.titan-btn-sm { padding: 0.3rem 0.7rem; font-size: 0.65rem; }
+
+/* ── Input ── */
+.titan-input {
+  background: rgba(0,255,255,0.04);
+  border: 1px solid var(--titan-border);
+  border-radius: 0;
+  color: var(--titan-fg);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.titan-input:focus { border-color: var(--titan-primary); box-shadow: 0 0 8px rgba(0,255,255,0.15); }
+.titan-input::placeholder { color: var(--titan-muted); }
+
+/* ── Progress ── */
+.titan-progress-track {
+  width: 100%; height: 4px;
+  background: rgba(0,255,255,0.08);
+}
+.titan-progress-fill {
+  height: 100%;
+  background: var(--titan-primary);
+  box-shadow: 0 0 8px rgba(0,255,255,0.5);
+  transition: width 0.3s ease;
+}
+
+/* ── Pulse indicator ── */
+.titan-pulse {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--titan-safe);
+  animation: titanPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--titan-safe);
+}
+@keyframes titanPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Flash success animation ── */
+.titan-flash-success {
+  animation: flashSuccess 0.6s ease;
+}
+@keyframes flashSuccess {
+  0%   { box-shadow: 0 0 0 rgba(0,255,136,0); border-color: var(--titan-border); }
+  50%  { box-shadow: 0 0 30px rgba(0,255,136,0.5); border-color: var(--titan-safe); }
+  100% { box-shadow: 0 0 0 rgba(0,255,136,0); border-color: var(--titan-border); }
+}
+
+/* ── Stat mini ── */
+.titan-stat-mini {
+  padding: 0.75rem;
+  background: rgba(0,255,255,0.04);
+  border: 1px solid var(--titan-border);
+}
+
+/* ── Cycle card ── */
+.titan-cycle-card {
+  padding: 0.75rem;
+  background: rgba(0,255,255,0.03);
+  border: 1px solid var(--titan-border);
+}
+
+/* ── Activity row ── */
+.titan-activity-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid rgba(0,255,255,0.06);
+}
+.titan-activity-row:last-child { border-bottom: none; }
+
+/* ── Arb row ── */
+.titan-arb-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--titan-border);
+  background: rgba(0,255,255,0.03);
+  margin-bottom: 0.25rem;
+}
+
+/* ── Rule card ── */
+.titan-rule-card {
+  padding: 0.75rem;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--titan-border);
+}
+
+/* ── Filter button ── */
+.titan-filter-btn {
+  font-size: 0.65rem; font-weight: 700; font-family: 'Space Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--titan-border);
+  background: transparent; color: var(--titan-muted);
+  border-radius: 0; cursor: pointer; transition: all 0.15s;
+}
+.titan-filter-btn.active,
+.titan-filter-btn:hover {
+  border-color: var(--titan-primary); color: var(--titan-primary);
+  background: rgba(0,255,255,0.07);
+}
+
+/* ── Mode button ── */
+.titan-mode-btn {
+  display: inline-flex; align-items: center;
+  font-size: 0.7rem; font-weight: 700; font-family: 'Space Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--titan-border);
+  background: transparent; color: var(--titan-muted);
+  border-radius: 0; cursor: pointer; transition: all 0.15s;
+}
+.titan-mode-btn.active {
+  border-color: var(--titan-primary); color: var(--titan-primary);
+  background: rgba(0,255,255,0.1);
+  box-shadow: 0 0 12px rgba(0,255,255,0.15);
+}
+
+/* ── Locked overlay ── */
+.titan-locked-overlay {
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--titan-amber);
+  background: rgba(255,140,0,0.04);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #030D18; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.2); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,255,255,0.4); }
