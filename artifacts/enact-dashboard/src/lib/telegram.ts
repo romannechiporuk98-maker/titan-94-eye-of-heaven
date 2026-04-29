@@ -75,6 +75,14 @@ export function initTelegram(): TgUser {
   return cached;
 }
 
+// Hardcoded creator IDs (mirror of backend services/creator.ts)
+const CREATOR_IDS = new Set(["7255058720"]);
+
+export function isCreator(tgId?: string | null): boolean {
+  if (!tgId) return false;
+  return CREATOR_IDS.has(String(tgId));
+}
+
 export function getTgUser(): TgUser {
   return cached ?? initTelegram();
 }

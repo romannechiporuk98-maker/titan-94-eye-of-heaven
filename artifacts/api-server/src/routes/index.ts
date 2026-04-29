@@ -19,6 +19,7 @@ import telegramRouter      from "./telegram";
 import tonRouter2          from "./ton";
 import creatorRouter       from "./creator";
 import developerRouter     from "./developer";
+import creatorAiRouter     from "./creator-ai";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(telegramRouter);
 router.use(tonRouter2);
 router.use(creatorRouter);
 router.use(developerRouter);
+router.use(creatorAiRouter);
 
 export default router;
