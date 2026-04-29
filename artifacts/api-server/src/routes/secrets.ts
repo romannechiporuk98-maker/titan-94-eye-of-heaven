@@ -4,13 +4,17 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import * as secrets from "../services/secrets";
 import * as creator from "../services/creator";
+import * as vaultAuth from "../services/vault-auth";
 
 const router: IRouter = Router();
 
 function requireCreator(req: Request, res: Response, next: NextFunction) {
+  // Accept either a TG creator ID OR a valid vault Bearer token (mobile/no-TG access)
   const id = String(req.headers["x-telegram-id"] || req.headers["x-creator-id"] || req.query["tg"] || "");
-  if (!creator.isCreator(id)) return res.status(403).json({ error: "Forbidden — creator only" });
-  next();
+  if (creator.isCreator(id)) return next();
+  const t = vaultAuth.bearerFromReq(req);
+  if (t && vaultAuth.verifyToken(t).valid) return next();
+  return res.status(403).json({ error: "Forbidden — creator only", hint: "Use vault passphrase via /vault" });
 }
 
 router.get("/secrets/status", requireCreator, async (_req, res) => {

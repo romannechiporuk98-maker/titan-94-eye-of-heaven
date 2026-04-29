@@ -24,6 +24,7 @@ import agentsRouter        from "./agents";
 import autotradeRouter     from "./autotrade";
 import secretsRouter       from "./secrets";
 import mirrorRouter        from "./mirror";
+import vaultRouter         from "./vault";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(agentsRouter);
 router.use(autotradeRouter);
 router.use(secretsRouter);
 router.use(mirrorRouter);
+router.use(vaultRouter);
 
 export default router;

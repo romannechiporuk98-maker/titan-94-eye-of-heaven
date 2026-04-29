@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { attachTelegramUser } from "./lib/telegram-auth";
 import { rateLimitMiddleware, armSentinel } from "./services/sentinel";
 import { isKillSwitched } from "./services/mirror";
 
@@ -41,6 +42,9 @@ app.use("/api", (req, res, next) => {
   next();
 });
 app.use("/api", rateLimitMiddleware);
+
+// Verify Telegram WebApp initData (HMAC) and attach req.tgUser
+app.use("/api", attachTelegramUser);
 
 app.use("/api", router);
 

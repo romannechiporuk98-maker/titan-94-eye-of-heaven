@@ -16,7 +16,7 @@ export function Splash() {
     if (typeof window === "undefined") return;
     // Skip splash on admin pages — creator works there often
     const path = window.location.pathname;
-    if (/(settings|protocol-94|creator|developer|builder)/i.test(path)) return;
+    if (/(settings|protocol-94|vault|creator|developer|builder)/i.test(path)) return;
     const force = new URLSearchParams(window.location.search).has("splash");
     const seen  = window.localStorage.getItem(STORAGE_KEY);
     if (force || !seen) {
