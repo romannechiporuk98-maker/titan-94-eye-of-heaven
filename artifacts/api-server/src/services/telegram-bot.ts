@@ -13,7 +13,11 @@ import { get as getSecret } from "./secrets";
 const ADMIN_ID  = process.env["TELEGRAM_ADMIN_CHAT_ID"]  || "7255058720";
 const APP_URL   = process.env["PUBLIC_APP_URL"]          || ""; // e.g. https://titan-94.replit.app
 const RESERVE   = "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v";
-let TOKEN       = process.env["TELEGRAM_BOT_TOKEN"]      || "";
+// Prefer a project-dedicated token (TELEGRAM_BOT_TOKEN_API) so this API never
+// races with bots running on the same TELEGRAM_BOT_TOKEN in other Replit
+// projects (Telegram returns 409 if two pollers share a token).
+let TOKEN       = process.env["TELEGRAM_BOT_TOKEN_API"]
+                || process.env["TELEGRAM_BOT_TOKEN"]      || "";
 
 let bot: Bot | null = null;
 let started = false;
@@ -23,7 +27,7 @@ export function getBot(): Bot | null { return bot; }
 
 /** Re-init bot after secret change (called by /api/secrets/set). */
 export async function reloadTelegramBot(): Promise<{ ok: boolean; reason?: string }> {
-  const fresh = await getSecret("TELEGRAM_BOT_TOKEN");
+  const fresh = (await getSecret("TELEGRAM_BOT_TOKEN_API")) || (await getSecret("TELEGRAM_BOT_TOKEN"));
   if (!fresh) return { ok: false, reason: "no token" };
   if (started && bot && fresh === TOKEN) return { ok: true, reason: "unchanged" };
   try {
@@ -318,16 +322,39 @@ export async function startTelegramBot() {
   if (started) return;
   const b = initTelegramBot();
   if (!b) return;
-  try {
-    // Long-polling — simpler than webhook, works behind any proxy
-    await b.start({
-      drop_pending_updates: true,
-      onStart: (info) => logger.info({ username: info.username }, "[TG-BOT] ♥ started — long-polling"),
-    }).catch((e) => logger.error(e, "[TG-BOT] start failed"));
-    started = true;
-  } catch (e) {
-    logger.error(e, "[TG-BOT] start exception");
-  }
+
+  // Retry loop — handles 409 (conflict with previous polling instance still
+  // held by Telegram's side after a fast restart). The previous long-polling
+  // socket can live up to ~30s on Telegram's edge before being released.
+  const MAX_ATTEMPTS = 8;
+  const BACKOFF_MS = 5000;
+
+  // Fire-and-forget: we don't want to block the API boot on the bot.
+  void (async () => {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        await b.start({
+          drop_pending_updates: true,
+          onStart: (info) => logger.info({ username: info.username, attempt }, "[TG-BOT] ♥ started — long-polling"),
+        });
+        // b.start() resolves only when the bot stops cleanly — if we get here
+        // without throw, treat it as a graceful shutdown.
+        started = true;
+        return;
+      } catch (e: any) {
+        const code = e?.error_code ?? e?.payload?.error_code;
+        const isConflict = code === 409;
+        if (isConflict && attempt < MAX_ATTEMPTS) {
+          logger.warn({ attempt, nextRetryMs: BACKOFF_MS }, "[TG-BOT] 409 conflict — retrying after stale polling session expires");
+          await new Promise((r) => setTimeout(r, BACKOFF_MS));
+          continue;
+        }
+        logger.error({ err: e, attempt }, "[TG-BOT] start failed — giving up");
+        started = false;
+        return;
+      }
+    }
+  })();
 }
 
 /** Send a notification to a specific user (by Telegram ID) */
