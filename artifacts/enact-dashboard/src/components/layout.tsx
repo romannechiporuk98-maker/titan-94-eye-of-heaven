@@ -1,18 +1,21 @@
 import { Link, useLocation } from "wouter";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
-  Eye, Shield, Search, DollarSign, Zap, Brain,
+  Eye, Shield, Search, DollarSign, Brain, Heart, FileCode, Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/",        label: "ENACT Overview",  icon: Activity,   group: "ENACT" },
-  { href: "/jobs",    label: "Job Explorer",    icon: Briefcase,  group: "ENACT" },
-  { href: "/create",  label: "Create Job",      icon: PlusCircle, group: "ENACT" },
-  { href: "/status",  label: "Agent Status",    icon: Eye,        group: "TITAN-94" },
-  { href: "/threats", label: "Threats Matrix",  icon: Shield,     group: "TITAN-94" },
-  { href: "/analyze", label: "Neural Analysis", icon: Search,     group: "TITAN-94" },
-  { href: "/earn",    label: "Earn Terminal",   icon: DollarSign, group: "TITAN-94" },
+  { href: "/",          label: "Command Center",  icon: Cpu,        group: "TITAN-94" },
+  { href: "/threats",   label: "Threats",         icon: Shield,     group: "TITAN-94" },
+  { href: "/contracts", label: "Smart Contracts", icon: FileCode,   group: "TITAN-94" },
+  { href: "/analyze",   label: "Neural Hub",      icon: Brain,      group: "TITAN-94" },
+  { href: "/immune",    label: "Immune System",   icon: Heart,      group: "TITAN-94" },
+  { href: "/status",    label: "Agent Status",    icon: Eye,        group: "TITAN-94" },
+  { href: "/earn",      label: "Earnings",        icon: DollarSign, group: "TITAN-94" },
+  { href: "/enact",     label: "ENACT Overview",  icon: Activity,   group: "ENACT" },
+  { href: "/jobs",      label: "Job Explorer",    icon: Briefcase,  group: "ENACT" },
+  { href: "/create",    label: "Create Job",      icon: PlusCircle, group: "ENACT" },
 ];
 
 const groups = [...new Set(NAV_ITEMS.map(n => n.group))];
@@ -23,13 +26,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: "#030D18", color: "#CFFFFF", fontFamily: "'Space Mono', monospace" }}>
 
-      {/* Sidebar */}
       <aside className="w-60 shrink-0 flex flex-col border-r" style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)" }}>
 
-        {/* Logo */}
         <div className="h-14 flex items-center px-5 border-b" style={{ borderColor: "rgba(0,255,255,0.15)" }}>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold" style={{ color: "#00FFFF" }}>◈ TITAN-94</span>
+          <div className="flex flex-col">
+            <span className="text-base font-bold leading-tight" style={{ color: "#00FFFF" }}>◈ TITAN-94</span>
+            <span className="text-[9px] tracking-widest" style={{ color: "rgba(0,255,255,0.4)" }}>SECURITY CORE</span>
           </div>
           <div className="ml-auto flex items-center gap-1">
             <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
@@ -37,7 +39,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto">
           {groups.map(group => (
             <div key={group} className="mb-4">
@@ -51,12 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 text-xs font-medium transition-all duration-150",
-                      isActive
-                        ? "text-cyan-400 border-l-2"
-                        : "hover:text-cyan-300"
-                    )}
+                    className={cn("flex items-center gap-3 px-3 py-2 text-xs font-medium transition-all duration-150 hover:text-cyan-300")}
                     style={{
                       borderLeftColor: isActive ? "#00FFFF" : "transparent",
                       borderLeftWidth: "2px",
@@ -73,7 +69,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        {/* Footer */}
         <div className="p-4 border-t text-xs" style={{ borderColor: "rgba(0,255,255,0.15)" }}>
           <div className="mb-2" style={{ color: "rgba(0,255,255,0.4)" }}>── CONTRACTS ──</div>
           <div className="space-y-1">
@@ -90,18 +85,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
               Reserve Fund <ExternalLink className="w-2 h-2" />
             </a>
           </div>
+          <div className="mt-3" style={{ color: "rgba(207,255,255,0.4)", fontSize: "10px" }}>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: "#00FF88" }} />
+              <span>ORGANISM ONLINE</span>
+            </div>
+            <div className="opacity-60 mt-1">Gemini 2.5 Flash · 4 Engines</div>
+            <div className="opacity-60">Active</div>
+          </div>
           <div className="mt-3 text-center" style={{ color: "rgba(207,255,255,0.25)", fontSize: "10px" }}>
             v4.0 · DEI GRATIA Роман
           </div>
         </div>
       </aside>
 
-      {/* CRT scanline overlay */}
       <div className="pointer-events-none fixed inset-0 z-50" style={{
         backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
       }} />
 
-      {/* Main */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden" style={{ background: "#030D18" }}>
         <div className="flex-1 overflow-y-auto">
           {children}

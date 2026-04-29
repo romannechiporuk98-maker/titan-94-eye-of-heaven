@@ -1,0 +1,42 @@
+﻿TITAN-94: Master Protocol & Classification V2
+Проєкт: TITAN-94 (Protocol 94)
+Власник (DEI GRATIA): @Cryptoagentton / infantryman
+AI-Ядро: Gemini 3.1 Pro (використовувати тільки моделі Gemini 2.5 і вище)
+Дата оновлення: 29 квітня 2026 року
+________________
+1. Система класифікації користувачів
+Ця ієрархія визначає рівень доступу до функціоналу нейромережевого ядра TITAN-94 та систему винагород у токенах.
+Рівень (Звання)
+	Умови досягнення / Підписки
+	Доступний функціонал
+ 
+	Рядовий (Private / Free)
+	Реєстрація в системі, підключення TON-гаманця та щоденний вхід (Daily Check-in).
+	Базовий сканер смарт-контрактів на вразливості. Перегляд публічних звітів.
+	Сержант (Specialist / PRO)
+	14 днів активності або підписка 5 TON. 5 успішних аудитів.
+	Розширені OSINT-фільтри, доступ до "невидимого монітора", пріоритет аналізу коду, DEX арбітраж-сканер.
+	Генерал (Titan Master / ELITE)
+	Успішний проект без помилок, утримання токенів або підписка 20 TON.
+	Повний доступ до ядра TITAN-94, автоматичне виправлення помилок (Auto-fix), управління протоколом, доступ до Reserve Fund.
+	2. Повна архітектура проєкту
+LAYER 1 — INPUT (TON blockchain, DEX, Telegram, API)
+LAYER 2 — PROTOCOL 94 (normalize, timestamp, event)
+LAYER 3 — EVENT BUS (queue, async workers)
+LAYER 4 — AGENTS (scan_agent, osint_agent, trend_agent)
+LAYER 5 — AI CORE (GPT для логіки, Gemini для аналізу контрактів)
+LAYER 6 — FUSION (merge AI scores)
+LAYER 7 — DECISION (Score > 80: SCAM, > 50: WARNING)
+LAYER 8 — ACTION (alert, log, block)
+
+3. Технічні параметри та модулі
+* Моніторинг: Глобальний аналіз чатів для запобігання дублікатам та покращення екосистеми TON. [cite: 8, 9]
+* Інструменти: Робота через Termux, StarMax на Android. [cite: 2]
+* Модуль TON: Читання блоків, парсинг транзакцій, трекінг гаманців (DEX DeDust, STON.fi, Megaton). [cite: 3, 8]
+* Honeypot Detector: Симуляція купівлі/продажу, перевірка ліквідності та податків (> 20% = RISK). [cite: 3, 5]
+4. Етапи розробки
+1. 0–10%: Базовий сервер, API, інгест даних. [cite: 5]
+2. 10–40%: Honeypot detector, OSINT-агенти. [cite: 5]
+3. 40–70%: AI scoring, система анти-дублікату. [cite: 5]
+4. 70–100%: Масштабування, B2B API, фінальний запуск. [cite: 5]
+TITAN-94 — автономний цифровий організм для захисту екосистеми TON. Solo Deo Subjectus. [cite: 8, 9]
