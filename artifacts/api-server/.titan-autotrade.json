@@ -1,0 +1,30 @@
+[
+  {
+    "id": "pos_inboetcx",
+    "ownerTgId": "7255058720",
+    "strategy": "arbitrage",
+    "risk": "medium",
+    "depositTon": 2,
+    "currentTon": 1.9999814740487754,
+    "pnlTon": -0.000018525951224646064,
+    "pnlPct": -0.0009262975612323032,
+    "trades": 1,
+    "wins": 0,
+    "losses": 1,
+    "consecutiveLosses": 1,
+    "paused": false,
+    "pausedReason": null,
+    "selfHealCount": 0,
+    "lastTradeAt": "2026-04-29T13:34:52.984Z",
+    "history": [
+      {
+        "ts": "2026-04-29T13:34:52.984Z",
+        "action": "ARBITRAGE LOSS @ $0.9998",
+        "pnl": -0.00001852595122457526,
+        "price": 0.999758
+      }
+    ],
+    "createdAt": "2026-04-29T13:34:52.798Z",
+    "updatedAt": "2026-04-29T13:34:52.984Z"
+  }
+]

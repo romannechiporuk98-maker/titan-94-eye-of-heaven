@@ -21,6 +21,7 @@ import creatorRouter       from "./creator";
 import developerRouter     from "./developer";
 import creatorAiRouter     from "./creator-ai";
 import agentsRouter        from "./agents";
+import autotradeRouter     from "./autotrade";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(creatorRouter);
 router.use(developerRouter);
 router.use(creatorAiRouter);
 router.use(agentsRouter);
+router.use(autotradeRouter);
 
 export default router;
