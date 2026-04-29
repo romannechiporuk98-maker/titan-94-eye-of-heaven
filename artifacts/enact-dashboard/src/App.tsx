@@ -23,6 +23,7 @@ import AnalyticsPage from "@/pages/analytics";
 import NexusPage from "@/pages/nexus";
 import CreatorPage from "@/pages/creator";
 import DeveloperPage from "@/pages/developer";
+import BuilderPage from "@/pages/builder";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -44,6 +45,7 @@ function Router() {
         <Route path="/earn"           component={EarnPage}      />
         <Route path="/developer"      component={DeveloperPage} />
         <Route path="/creator"        component={CreatorPage}   />
+        <Route path="/builder"        component={BuilderPage}   />
         <Route path="/enact"          component={Home}          />
         <Route path="/jobs"           component={Jobs}          />
         <Route path="/jobs/:address"  component={JobDetail}     />

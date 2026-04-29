@@ -48,11 +48,12 @@ router.post("/creator/settings/reset", requireCreator, async (req, res) => {
 
 // ─── Dashboard ─────────────────────────────────────────────────────────
 router.get("/creator/dashboard", requireCreator, async (_req, res) => {
-  const [subs, recentActivity, vulnStats, settings] = await Promise.all([
+  const [subs, recentActivity, vulnStats, settings, agentState] = await Promise.all([
     store.listSubscribers(),
-    store.listActivity(20),
+    store.listActivity(30),
     store.vulnStats(),
     creator.getSettings(),
+    store.getAgentState(),
   ]);
   const now = Date.now();
   const isActive = (s: any) => s.isActive && (!s.expiresAt || new Date(s.expiresAt).getTime() > now);
@@ -61,13 +62,65 @@ router.get("/creator/dashboard", requireCreator, async (_req, res) => {
   const developer = subs.filter((s) => isActive(s) && s.plan === "developer").length;
   const free      = subs.filter((s) => isActive(s) && s.plan === "free").length;
 
+  // Build 7-day series from activity rows
+  const dayBuckets = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() - (6 - i));
+    return { date: d.toISOString().slice(5, 10), ts: d.getTime(), users: 0, revenue: 0, threats: 0 };
+  });
+  for (const s of subs) {
+    const created = (s as any).createdAt ? new Date((s as any).createdAt).getTime() : 0;
+    const bucket = dayBuckets.find((b) => created >= b.ts && created < b.ts + 86_400_000);
+    if (bucket) {
+      bucket.users++;
+      if (s.plan === "elite")     bucket.revenue += settings.elitePriceTon;
+      if (s.plan === "pro")       bucket.revenue += settings.proPriceTon;
+      if (s.plan === "developer") bucket.revenue += settings.developerPriceTon;
+    }
+  }
+  for (const a of recentActivity) {
+    const ts = new Date(a.timestamp || a.createdAt || 0).getTime();
+    const bucket = dayBuckets.find((b) => ts >= b.ts && ts < b.ts + 86_400_000);
+    if (bucket && (a.kind === "VULN" || a.kind === "SCAN" || a.kind === "HEAL")) bucket.threats++;
+  }
+
+  // Plan distribution for pie chart
+  const planDist = [
+    { name: "FREE",      value: free,      color: "#6b7280" },
+    { name: "PRO",       value: pro,       color: "#00FFFF" },
+    { name: "ELITE",     value: elite,     color: "#FF8C00" },
+    { name: "DEVELOPER", value: developer, color: "#00FF88" },
+  ];
+
+  // Active subscribers list
+  const activeList = subs.filter(isActive).slice(0, 10);
+
+  // Total ledger balance
+  const totalRevenue = elite * settings.elitePriceTon + pro * settings.proPriceTon + developer * settings.developerPriceTon;
+
   res.json({
     summary: {
-      users: { total: subs.length, elite, pro, developer, free },
-      revenue_ton: elite * settings.elitePriceTon + pro * settings.proPriceTon + developer * settings.developerPriceTon,
+      users: { total: subs.length, elite, pro, developer, free, active: elite + pro + developer + free },
+      revenue: {
+        monthly_ton: totalRevenue,
+        monthly_usdt: totalRevenue * 3.84,
+        annual_ton: totalRevenue * 12,
+        avg_per_user: subs.length ? totalRevenue / subs.length : 0,
+      },
       cycles_active: { scan: settings.scanCycleEnabled, heal: settings.healCycleEnabled, autoEarn: settings.autoEarnEnabled, tonPoller: settings.tonPollerEnabled },
       vulnerabilities: vulnStats,
+      agentState: {
+        cycles: agentState.cycles,
+        healingCycles: agentState.healingCycles,
+        learnCycles: agentState.learnCycles,
+        knowledgeSize: agentState.knowledgeSize,
+        accuracy: agentState.accuracy,
+      },
     },
+    series: { weekly: dayBuckets },
+    planDist,
+    activeUsers: activeList,
     settings,
     recentActivity: recentActivity.slice(0, 20),
     creators: creator.listCreators(),

@@ -20,6 +20,7 @@ import tonRouter2          from "./ton";
 import creatorRouter       from "./creator";
 import developerRouter     from "./developer";
 import creatorAiRouter     from "./creator-ai";
+import agentsRouter        from "./agents";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(tonRouter2);
 router.use(creatorRouter);
 router.use(developerRouter);
 router.use(creatorAiRouter);
+router.use(agentsRouter);
 
 export default router;

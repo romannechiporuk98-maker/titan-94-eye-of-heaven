@@ -1,0 +1,25 @@
+[
+  {
+    "id": "agent_f5d0lm4y",
+    "ownerTgId": "7255058720",
+    "name": "My Test Guardian",
+    "description": "watch test",
+    "role": "You watch",
+    "goal": "Notify me",
+    "tools": [
+      "ton-scan",
+      "telegram-notify"
+    ],
+    "intervalMin": 5,
+    "enabled": true,
+    "memory": [],
+    "runs": 0,
+    "successes": 0,
+    "failures": 0,
+    "lastRunAt": null,
+    "nextRunAt": "2026-04-29T13:19:36.888Z",
+    "lastOutput": "",
+    "createdAt": "2026-04-29T13:18:36.888Z",
+    "updatedAt": "2026-04-29T13:18:36.888Z"
+  }
+]
