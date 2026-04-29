@@ -1,54 +1,61 @@
 import { Router, type IRouter } from "express";
-import { state, vulnerabilities, activityLog, knowledgeBase } from "../services/heartbeat";
+import * as store from "../services/store";
+import { runScan, getStartedAt } from "../services/heartbeat";
 
 const router: IRouter = Router();
 
-router.get("/agent/stats", (_req, res) => {
-  const active   = vulnerabilities.filter((v) => v.status === "active").length;
-  const healed   = vulnerabilities.filter((v) => v.status === "healed").length;
-  const critical = vulnerabilities.filter((v) => v.severity === "critical").length;
-  const high     = vulnerabilities.filter((v) => v.severity === "high").length;
+router.get("/agent/stats", async (_req, res) => {
+  const [state, stats, actCount, knCount] = await Promise.all([
+    store.getAgentState(),
+    store.vulnStats(),
+    store.activityCount(),
+    store.knowledgeCount(),
+  ]);
 
+  const accuracy = parseFloat(state.accuracy);
   res.json({
     cycles:        state.cycles,
     healingCycles: state.healingCycles,
     learnCycles:   state.learnCycles,
     financeCycles: state.financeCycles,
-    accuracy:      state.accuracy,
-    aiAccuracy:    state.accuracy,
+    accuracy,
+    aiAccuracy:    accuracy,
     threatsHealed: state.threatsHealed,
-    knowledgeSize: state.knowledgeSize,
+    knowledgeSize: knCount,
     uptime:        process.uptime(),
-    startedAt:     state.startedAt,
-    threats:       { total: vulnerabilities.length, active, healed, critical, high },
-    activityCount: activityLog.length,
-    status:        "running",
-    version:       "4.0-OMNIPOTENT",
+    startedAt:     getStartedAt(),
+    lastBlockSeqno: state.lastBlockSeqno,
+    threats: {
+      total:    stats.total,
+      active:   stats.active,
+      healing:  stats.healing,
+      healed:   stats.healed,
+      critical: stats.critical,
+      high:     stats.high,
+      medium:   stats.medium,
+      low:      stats.low,
+      tvlAtRisk: stats.tvl_at_risk,
+    },
+    activityCount: actCount,
+    status:  "running",
+    version: "4.0-OMNIPOTENT",
   });
 });
 
-router.get("/agent/cycles", (_req, res) => {
+router.get("/agent/cycles", async (_req, res) => {
+  const s = await store.getAgentState();
   res.json({
-    scan:    { name: "SCAN",    interval: "3min",  lastRun: state.lastScan,    cycles: state.cycles,        status: "active" },
-    heal:    { name: "HEAL",    interval: "5min",  lastRun: state.lastHeal,    cycles: state.healingCycles, status: "active" },
-    learn:   { name: "LEARN",   interval: "7min",  lastRun: state.lastLearn,   cycles: state.learnCycles,   status: "active" },
-    finance: { name: "FINANCE", interval: "10min", lastRun: state.lastFinance, cycles: state.financeCycles, status: "active" },
+    scan:    { name: "SCAN",    interval: "3min",  lastRun: s.lastScan,    cycles: s.cycles,        status: "active" },
+    heal:    { name: "HEAL",    interval: "5min",  lastRun: s.lastHeal,    cycles: s.healingCycles, status: "active" },
+    learn:   { name: "LEARN",   interval: "7min",  lastRun: s.lastLearn,   cycles: s.learnCycles,   status: "active" },
+    finance: { name: "FINANCE", interval: "10min", lastRun: s.lastFinance, cycles: s.financeCycles, status: "active" },
   });
 });
 
 router.post("/agent/scan", async (_req, res) => {
-  // Trigger an immediate synthetic scan entry
-  const blockNum = 47291034 + state.cycles + 1;
-  activityLog.unshift({
-    id: activityLog.length + 100,
-    type: "SCAN", title: "Manual scan triggered",
-    message: `Block #${blockNum} — manual scan via API`,
-    severity: "info", createdAt: new Date().toISOString(),
-  });
-  state.cycles++;
-  state.lastScan = new Date().toISOString();
-
-  res.json({ success: true, message: "Scan triggered", cycle: state.cycles, timestamp: state.lastScan });
+  await runScan();
+  const s = await store.getAgentState();
+  res.json({ success: true, message: "Scan triggered", cycle: s.cycles, lastBlockSeqno: s.lastBlockSeqno, timestamp: s.lastScan });
 });
 
 export default router;

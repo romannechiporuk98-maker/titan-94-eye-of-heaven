@@ -1,16 +1,14 @@
 import { Router, type IRouter } from "express";
-import { activityLog } from "../services/heartbeat";
+import * as store from "../services/store";
 
 const router: IRouter = Router();
 
-router.get("/activity", (req, res) => {
-  const { type, severity, limit = "20", offset = "0" } = req.query as Record<string, string>;
-  let result = [...activityLog];
-  if (type)     result = result.filter(a => a.type === type.toUpperCase());
-  if (severity) result = result.filter(a => a.severity === severity);
-  const total = result.length;
-  const page  = result.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
-  res.json({ activity: page, total, offset: parseInt(offset), limit: parseInt(limit) });
+router.get("/activity", async (req, res) => {
+  const { limit = "20", offset = "0" } = req.query as Record<string, string>;
+  const lim = Math.min(parseInt(limit) || 20, 200);
+  const off = parseInt(offset) || 0;
+  const [rows, total] = await Promise.all([store.listActivity(lim, off), store.activityCount()]);
+  res.json({ activity: rows, total, offset: off, limit: lim });
 });
 
 export default router;

@@ -12,6 +12,7 @@ import activityRouter      from "./activity";
 import monetizationRouter  from "./monetization";
 import tonRouter           from "./ton-routes";
 import aiEvolutionRouter   from "./ai-evolution";
+import webhookRouter       from "./webhook";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(activityRouter);
 router.use(monetizationRouter);
 router.use(tonRouter);
 router.use(aiEvolutionRouter);
+router.use(webhookRouter);
 
 export default router;

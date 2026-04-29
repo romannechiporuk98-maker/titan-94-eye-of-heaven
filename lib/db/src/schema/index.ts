@@ -3,6 +3,8 @@ import {
   decimal, boolean, pgEnum, jsonb,
 } from "drizzle-orm/pg-core";
 
+export * from "./users";
+
 // ── Enums ────────────────────────────────────────────────────────────
 export const severityEnum = pgEnum("severity", ["critical", "high", "medium", "low", "info"]);
 export const statusEnum   = pgEnum("status",   ["active", "healing", "healed", "false_positive"]);
@@ -72,7 +74,7 @@ export const subscribersTable = pgTable("subscribers", {
   createdAt:  timestamp("created_at").defaultNow().notNull(),
 });
 
-// ── Agent state ──────────────────────────────────────────────────────
+// ── Agent state (singleton row id=1) ─────────────────────────────────
 export const agentStateTable = pgTable("agent_state", {
   id:            serial("id").primaryKey(),
   cycles:        integer("cycles").notNull().default(0),
@@ -82,6 +84,12 @@ export const agentStateTable = pgTable("agent_state", {
   accuracy:      decimal("accuracy", { precision: 5, scale: 4 }).notNull().default("0.847"),
   threatsHealed: integer("threats_healed").notNull().default(0),
   knowledgeSize: integer("knowledge_size").notNull().default(0),
+  lastScan:      timestamp("last_scan"),
+  lastHeal:      timestamp("last_heal"),
+  lastLearn:     timestamp("last_learn"),
+  lastFinance:   timestamp("last_finance"),
+  lastBlockSeqno: integer("last_block_seqno"),
+  startedAt:     timestamp("started_at").defaultNow().notNull(),
   updatedAt:     timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -95,6 +103,32 @@ export const blockedAddressesTable = pgTable("blocked_addresses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ── Billing ledger (CPA / bounty / withdrawals) ──────────────────────
+export const billingLedgerTable = pgTable("billing_ledger", {
+  id:          serial("id").primaryKey(),
+  telegramId:  text("telegram_id").notNull(),
+  type:        text("type").notNull(), // 'cpa' | 'bounty' | 'withdrawal' | 'subscription' | 'adjustment'
+  amountTon:   decimal("amount_ton", { precision: 18, scale: 9 }).notNull(),
+  description: text("description").notNull(),
+  txHash:      text("tx_hash"),
+  createdAt:   timestamp("created_at").defaultNow().notNull(),
+});
+
+// ── Verified TON payments ─────────────────────────────────────────────
+export const tonPaymentsTable = pgTable("ton_payments", {
+  id:             serial("id").primaryKey(),
+  txHash:         text("tx_hash").notNull().unique(),
+  fromAddress:    text("from_address").notNull(),
+  toAddress:      text("to_address").notNull(),
+  amountNano:     text("amount_nano").notNull(),
+  amountTon:      decimal("amount_ton", { precision: 18, scale: 9 }).notNull(),
+  comment:        text("comment"),
+  telegramId:     text("telegram_id"),
+  planActivated:  text("plan_activated"),
+  verified:       boolean("verified").notNull().default(false),
+  createdAt:      timestamp("created_at").defaultNow().notNull(),
+});
+
 // ── Type exports ──────────────────────────────────────────────────────
 export type Vulnerability    = typeof vulnerabilitiesTable.$inferSelect;
 export type Activity         = typeof activityTable.$inferSelect;
@@ -103,3 +137,5 @@ export type Knowledge        = typeof knowledgeTable.$inferSelect;
 export type Subscriber       = typeof subscribersTable.$inferSelect;
 export type AgentState       = typeof agentStateTable.$inferSelect;
 export type BlockedAddress   = typeof blockedAddressesTable.$inferSelect;
+export type BillingLedger    = typeof billingLedgerTable.$inferSelect;
+export type TonPayment       = typeof tonPaymentsTable.$inferSelect;

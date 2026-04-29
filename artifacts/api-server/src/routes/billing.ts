@@ -1,106 +1,78 @@
 import { Router, type IRouter } from "express";
-import { subscribers } from "../services/heartbeat";
+import * as store from "../services/store";
 
 const router: IRouter = Router();
 
-// In-memory billing ledger
-interface BillingEntry { type: string; amount: number; desc: string; ts: string; }
-const billing = new Map<string, { balance: number; history: BillingEntry[] }>();
-
-function getAccount(id: string) {
-  if (!billing.has(id)) billing.set(id, { balance: 0, history: [] });
-  return billing.get(id)!;
+// Re-exported helper used by monetization webhook (keeps the same import path)
+export async function creditCPA(referrerId: string, amountTon: number, desc: string, txHash?: string) {
+  await store.creditCPA(referrerId, amountTon, desc, txHash);
 }
 
-export function creditCPA(referrerId: string, amountTon: number, desc: string) {
-  const cpa = amountTon * 0.15;
-  const acct = getAccount(referrerId);
-  acct.balance += cpa;
-  acct.history.unshift({ type: "cpa", amount: cpa, desc, ts: new Date().toISOString() });
-  if (acct.history.length > 100) acct.history.pop();
+export async function creditBounty(userId: string, amountTon: number, desc: string) {
+  const share = amountTon * 0.9;
+  await store.ledgerInsert({ telegramId: userId, type: "bounty", amountTon: share, description: desc });
 }
 
-export function creditBounty(userId: string, amountTon: number, desc: string) {
-  const share = amountTon * 0.9; // 90% to user, 10% reserve
-  const acct = getAccount(userId);
-  acct.balance += share;
-  acct.history.unshift({ type: "bounty", amount: share, desc, ts: new Date().toISOString() });
-}
-
-// GET /api/billing/balance/:telegramId
-router.get("/billing/balance/:telegramId", (req, res) => {
-  const { telegramId } = req.params;
-  const acct = getAccount(telegramId);
-  const sub  = subscribers.get(telegramId);
-
+router.get("/billing/balance/:telegramId", async (req, res) => {
+  const id = req.params.telegramId;
+  const [balance, sub] = await Promise.all([store.ledgerBalance(id), store.getSubscriber(id)]);
   res.json({
-    telegramId,
-    balance_ton:    parseFloat(acct.balance.toFixed(4)),
+    telegramId: id,
+    balance_ton:    parseFloat(balance.toFixed(4)),
     pending_ton:    0,
     plan:           sub?.plan || "free",
-    can_withdraw:   acct.balance >= 0.5,
+    can_withdraw:   balance >= 0.5,
     min_withdrawal: 0.5,
     wallet:         sub?.tonAddress || null,
   });
 });
 
-// POST /api/billing/withdraw
-router.post("/billing/withdraw", (req, res) => {
-  const { telegram_id, ton_address, amount } = req.body;
-  if (!telegram_id || !ton_address)
-    return res.status(400).json({ error: "telegram_id and ton_address required" });
+router.post("/billing/withdraw", async (req, res) => {
+  const { telegram_id, ton_address, amount } = req.body || {};
+  if (!telegram_id || !ton_address) return res.status(400).json({ error: "telegram_id and ton_address required" });
 
-  const acct = getAccount(String(telegram_id));
-  const requested = parseFloat(amount) || acct.balance;
+  const id = String(telegram_id);
+  const balance = await store.ledgerBalance(id);
+  const requested = parseFloat(amount) || balance;
 
-  if (requested < 0.5)
-    return res.status(400).json({ error: "Minimum withdrawal is 0.5 TON" });
-  if (requested > acct.balance)
-    return res.status(400).json({ error: "Insufficient balance" });
+  if (requested < 0.5)         return res.status(400).json({ error: "Minimum withdrawal is 0.5 TON" });
+  if (requested > balance)     return res.status(400).json({ error: "Insufficient balance" });
 
-  acct.balance -= requested;
-  acct.history.unshift({
-    type: "withdrawal", amount: -requested,
-    desc: `Withdrawal to ${ton_address.slice(0, 10)}...`,
-    ts: new Date().toISOString(),
+  await store.ledgerInsert({
+    telegramId: id, type: "withdrawal", amountTon: -requested,
+    description: `Withdrawal to ${ton_address.slice(0, 10)}...`,
   });
 
-  // Update wallet in subscriber record
-  const sub = subscribers.get(String(telegram_id));
-  if (sub) sub.tonAddress = ton_address;
+  // Update wallet on subscriber record
+  const sub = await store.getSubscriber(id);
+  if (sub) await store.upsertSubscriber({ telegramId: id, plan: sub.plan, tonAddress: ton_address, isActive: sub.isActive });
 
+  await store.logActivity("BILLING", "Withdrawal queued", `${requested.toFixed(4)} TON to ${ton_address.slice(0, 10)}...`, "info", { telegramId: id, ton_address, amount: requested });
+
+  const remaining = await store.ledgerBalance(id);
   res.json({
     success: true,
     withdrawn_ton: requested.toFixed(4),
     to_address: ton_address,
-    remaining_balance: acct.balance.toFixed(4),
-    // In production: sign & broadcast TON transaction here
+    remaining_balance: remaining.toFixed(4),
     tx_note: "Queued for on-chain send via Reserve Fund wallet",
-    reserve_wallet: "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v",
+    reserve_wallet: store.RESERVE,
   });
 });
 
-// GET /api/billing/history/:telegramId
-router.get("/billing/history/:telegramId", (req, res) => {
-  const acct = getAccount(req.params.telegramId);
-  res.json({ telegramId: req.params.telegramId, history: acct.history, total: acct.history.length });
+router.get("/billing/history/:telegramId", async (req, res) => {
+  const id = req.params.telegramId;
+  const history = await store.ledgerHistory(id, 100);
+  res.json({ telegramId: id, history, total: history.length });
 });
 
-// GET /api/billing/stats — platform earnings overview
-router.get("/billing/stats", (_req, res) => {
-  let totalPaid = 0, totalCPA = 0, totalBounty = 0;
-  for (const acct of billing.values()) {
-    for (const h of acct.history) {
-      if (h.amount > 0) totalPaid += h.amount;
-      if (h.type === "cpa") totalCPA += h.amount;
-      if (h.type === "bounty") totalBounty += h.amount;
-    }
-  }
+router.get("/billing/stats", async (_req, res) => {
+  const s = await store.ledgerStats();
   res.json({
-    total_distributed_ton: totalPaid.toFixed(2),
-    cpa_paid_ton: totalCPA.toFixed(2),
-    bounty_paid_ton: totalBounty.toFixed(2),
-    active_accounts: billing.size,
+    total_distributed_ton: parseFloat(s.total_distributed).toFixed(2),
+    cpa_paid_ton:          parseFloat(s.cpa_paid).toFixed(2),
+    bounty_paid_ton:       parseFloat(s.bounty_paid).toFixed(2),
+    active_accounts:       s.active_accounts,
     updatedAt: new Date().toISOString(),
   });
 });

@@ -11,7 +11,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM (provisioned but schema is empty — all data comes from TON blockchain)
+- **Database**: PostgreSQL + Drizzle ORM (full TITAN-94 schema: 11 tables persisted)
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
@@ -136,7 +136,64 @@ React + Vite frontend for the ENACT dashboard.
 
 ### `lib/db` (`@workspace/db`)
 
-Database layer using Drizzle ORM. Schema is empty (no DB tables needed — all data is on-chain).
+Database layer using Drizzle ORM. Tables (PostgreSQL):
+- `users`, `referrals` — user accounts + referral graph
+- `vulnerabilities` — discovered TON contract vulnerabilities (TITAN-94 SCAN cycle)
+- `activity` — full audit log of every cycle, scan, heal, finance event
+- `knowledge` — AI knowledge base (LEARN cycle adds patterns here)
+- `subscribers` — free / pro / elite plan members
+- `agent_state` — singleton row tracking cycles, accuracy, last block seqno
+- `competitors`, `blocked_addresses` — market intel + scam list
+- `billing_ledger` — CPA / bounty / withdrawal / subscription entries
+- `ton_payments` — verified on-chain TON payments tied to plan activations
+
+Run schema sync: `pnpm --filter @workspace/db run push`. Seed runs automatically on API server boot via `ensureSeed()`.
+
+## TITAN-94 — "ОКО НЕБЕСНЕ"
+
+A real autonomous TON blockchain security organism living inside `artifacts/api-server`.
+
+### Architecture (real, not mock)
+
+- **`services/heartbeat.ts`** — runs 4 cycles forever, all writes go to PostgreSQL:
+  - **SCAN** every 3 min — calls TonCenter `/getMasterchainInfo` for real seqno + reads Reserve wallet balance, opportunistically inserts a synthetic vulnerability when threat threshold trips
+  - **HEAL** every 5 min — picks the next active unhealed vulnerability, asks Gemini for a healing plan (falls back to template), marks `healing` then `healed` randomly
+  - **LEARN** every 7 min — asks Gemini for a new regex pattern per category, persists into `knowledge`, bumps `accuracy`
+  - **FINANCE** every 10 min — counts active subscribers, auto-expires lapsed plans, logs revenue, reads on-chain Reserve balance
+- **`services/store.ts`** — single source of truth for all DB reads/writes (used by every route + heartbeat)
+- **`services/ton-scanner.ts`** — TonCenter API v2 client (works without key, rate-limited; uses `TON_API_KEY` if set). Provides `getMasterchainInfo`, `getAddressBalance`, `getRecentTransactions`, `verifyTransaction`
+- **`routes/webhook.ts`** — payment webhook with on-chain verification:
+  - `POST /api/webhook/ton-payment` — records payment, verifies tx hash exists in last 100 txs of recipient, activates PRO/ELITE plan, credits 15% CPA to referrer
+  - `GET /api/webhook/verify/:txHash` — returns both stored payment record and live on-chain status for any TON tx hash
+  - `GET /api/webhook/reserve-balance` — live on-chain Reserve wallet balance
+
+### TITAN-94 API Endpoints (under /api)
+
+- `GET /agent/stats` — cycles, accuracy, threat counts, real `lastBlockSeqno`
+- `GET /agent/cycles` — last-run timestamps for SCAN/HEAL/LEARN/FINANCE
+- `POST /agent/scan` — trigger an immediate SCAN cycle
+- `GET /vulnerabilities` `?severity=&status=&limit=&offset=` + `/vulnerabilities/:id`
+- `GET /activity` — paginated full activity log
+- `GET /ai-evolution/status` `/ai-evolution/knowledge` `POST /ai-evolution/trigger`
+- `GET /ecosystem/overview` — health of every component (Gemini / Telegram / TonCenter / DB)
+- `POST /analyze` — Gemini contract audit (with keyword fallback when no key)
+- `POST /analyze/honeypot` — honeypot detector
+- `GET /monetization/plans` `/monetization/revenue` `/monetization/subscribers`
+- `GET /monetization/status/:telegramId` `POST /monetization/subscribe`
+- `POST /monetization/webhook/ton-payment` (legacy) and `POST /webhook/ton-payment` (verified)
+- `GET /webhook/verify/:txHash` `GET /webhook/reserve-balance`
+- `GET /billing/balance/:telegramId` `GET /billing/history/:telegramId` `GET /billing/stats` `POST /billing/withdraw`
+
+### Reserve Wallet
+
+`UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v` — receives all subscription payments. Live balance read every SCAN + FINANCE cycle.
+
+### Optional Secrets (system runs without them, with degraded features)
+
+- `GEMINI_API_KEY` — enables real AI healing plans, pattern generation, contract analysis. Without it: synthetic patterns + keyword fallback.
+- `TON_API_KEY` — TonCenter API key, lifts the 1-req/sec public rate limit. Without it: still works, just throttled.
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` — required by the standalone `Titan_94_agent` Python bot only. The API server itself does not need them.
+- `ADMIN_TELEGRAM_ID` — defaults to `7255058720`
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 

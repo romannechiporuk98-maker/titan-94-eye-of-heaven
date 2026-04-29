@@ -1,57 +1,64 @@
 import { Router, type IRouter } from "express";
-import { state, knowledgeBase, activityLog } from "../services/heartbeat";
+import * as store from "../services/store";
+import { runLearn } from "../services/heartbeat";
 
 const router: IRouter = Router();
 
-router.get("/ai-evolution/status", (_req, res) => {
+router.get("/ai-evolution/status", async (_req, res) => {
+  const [state, knowledge] = await Promise.all([store.getAgentState(), store.listKnowledge(100)]);
+  const accuracy = parseFloat(state.accuracy);
   res.json({
-    model:         "gemini-2.0-flash",
-    fallback:      "keyword-v2",
-    accuracy:      state.accuracy,
-    accuracyPct:   (state.accuracy * 100).toFixed(1),
-    learnCycles:   state.learnCycles,
-    knowledgeSize: state.knowledgeSize,
-    patternsLearned: knowledgeBase.length,
-    categories:    [...new Set(knowledgeBase.map(k => k.category))],
-    evolutionStage: state.learnCycles < 10 ? "Infant" : state.learnCycles < 50 ? "Learning" : state.learnCycles < 200 ? "Mature" : "Superintelligent",
-    nextLearnIn:   `${7 - (Math.floor(process.uptime() / 60) % 7)} min`,
-    updatedAt:     new Date().toISOString(),
+    model:           "gemini-2.0-flash",
+    fallback:        "keyword-v2",
+    accuracy,
+    accuracyPct:     (accuracy * 100).toFixed(1),
+    learnCycles:     state.learnCycles,
+    knowledgeSize:   state.knowledgeSize,
+    patternsLearned: knowledge.length,
+    categories:      [...new Set(knowledge.map((k) => k.category))],
+    evolutionStage:
+      state.learnCycles < 10 ? "Infant" :
+      state.learnCycles < 50 ? "Learning" :
+      state.learnCycles < 200 ? "Mature" : "Superintelligent",
+    nextLearnIn: `${7 - (Math.floor(process.uptime() / 60) % 7)} min`,
+    updatedAt:   new Date().toISOString(),
   });
 });
 
-router.get("/ai-evolution/knowledge", (req, res) => {
+router.get("/ai-evolution/knowledge", async (req, res) => {
   const { category, limit = "20", offset = "0" } = req.query as Record<string, string>;
-  let result = [...knowledgeBase];
-  if (category) result = result.filter(k => k.category === category);
+  const all = await store.listKnowledge(200);
+  let result = category ? all.filter((k) => k.category === category) : all;
+  const off = parseInt(offset) || 0;
+  const lim = Math.min(parseInt(limit) || 20, 200);
+  const avg = all.length ? (all.reduce((s, k) => s + parseFloat(k.confidence), 0) / all.length * 100).toFixed(1) : "0";
   res.json({
-    patterns: result.slice(parseInt(offset), parseInt(offset) + parseInt(limit)),
-    total: result.length,
-    categories: [...new Set(knowledgeBase.map(k => k.category))],
-    avgConfidence: knowledgeBase.length ? (knowledgeBase.reduce((s, k) => s + parseFloat(String(k.confidence)), 0) / knowledgeBase.length * 100).toFixed(1) : "0",
+    patterns:      result.slice(off, off + lim),
+    total:         result.length,
+    categories:    [...new Set(all.map((k) => k.category))],
+    avgConfidence: avg,
   });
 });
 
-router.post("/ai-evolution/trigger", (_req, res) => {
-  activityLog.unshift({
-    id: activityLog.length + 300, type: "LEARN",
-    title: "Manual LEARN cycle triggered",
-    message: `Cycle #${state.learnCycles + 1} started via API`,
-    severity: "info", createdAt: new Date().toISOString(),
-  });
-  res.json({ success: true, message: "LEARN cycle queued", currentCycle: state.learnCycles });
+router.post("/ai-evolution/trigger", async (_req, res) => {
+  await runLearn();
+  const s = await store.getAgentState();
+  res.json({ success: true, message: "LEARN cycle executed", currentCycle: s.learnCycles });
 });
 
-router.get("/ecosystem/overview", (_req, res) => {
+router.get("/ecosystem/overview", async (_req, res) => {
+  const s = await store.getAgentState();
+  const [knCount, actCount] = await Promise.all([store.knowledgeCount(), store.activityCount()]);
   res.json({
     agents: [
-      { name: "TITAN-94 Core",      status: "active", version: "4.0", role: "Security Scanner" },
-      { name: "Gemini 2.0 Flash",   status: "active", version: "2.0", role: "AI Analysis" },
-      { name: "TON Scanner",        status: "active", version: "1.0", role: "Blockchain Monitor" },
-      { name: "Telegram Bot",       status: process.env.TELEGRAM_BOT_TOKEN ? "active" : "inactive", version: "1.0", role: "User Interface" },
+      { name: "TITAN-94 Core",    status: "active", version: "4.0", role: "Security Scanner" },
+      { name: "Gemini 2.0 Flash", status: process.env["GEMINI_API_KEY"] ? "active" : "inactive", version: "2.0", role: "AI Analysis" },
+      { name: "TonCenter Scanner", status: process.env["TON_API_KEY"] ? "active (keyed)" : "active (rate-limited)", version: "1.0", role: "Blockchain Monitor" },
+      { name: "Telegram Bot",     status: process.env["TELEGRAM_BOT_TOKEN"] ? "active" : "inactive", version: "1.0", role: "User Interface" },
     ],
-    blockchain: { network: "TON Mainnet", status: "operational", subSecondFinality: true },
-    database:   { status: "operational", tables: 7, records: 100 },
-    heartbeat:  { cycles: state.cycles, uptime: process.uptime().toFixed(0) + "s" },
+    blockchain: { network: "TON Mainnet", status: "operational", subSecondFinality: true, lastSeqno: s.lastBlockSeqno },
+    database:   { status: "operational", tables: 11, knowledgeSize: knCount, activityCount: actCount },
+    heartbeat:  { cycles: s.cycles, healingCycles: s.healingCycles, learnCycles: s.learnCycles, financeCycles: s.financeCycles, uptime: process.uptime().toFixed(0) + "s" },
     updatedAt:  new Date().toISOString(),
   });
 });
