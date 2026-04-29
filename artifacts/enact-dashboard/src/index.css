@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -227,8 +228,8 @@
 
 /* ═══════════════════════════════════════════════════════
    TITAN-94 «ОКО НЕБЕСНЕ» — КІБЕРПАНК ДИЗАЙН-СИСТЕМА
+   (font-import moved to top of file per CSS spec)
    ═══════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
 :root {
   --titan-bg:      #030D18;
