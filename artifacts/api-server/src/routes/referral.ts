@@ -1,183 +1,178 @@
+/**
+ * Referral / auth routes — persisted to PostgreSQL (users + referrals tables).
+ * Implements Legion 10/10: 10 referrals → 10 days ELITE.
+ */
 import { Router, type IRouter } from "express";
+import { db, usersTable, referralsTable, type User } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import * as store from "../services/store";
 
 const router: IRouter = Router();
-
-// In-memory store for hackathon demo
-// (replace with real DB in production)
-const users = new Map<string, {
-  telegramId: string;
-  username?: string;
-  tier: "free" | "pro" | "elite";
-  trialExpiresAt: Date;
-  referredBy?: string;
-  freeAuditsUsed: number;
-  reserveFundTon: number;
-  createdAt: Date;
-  referralCount: number;
-}>();
-
-const referrals = new Map<string, string[]>(); // referrerId → [referredIds]
 
 const TRIAL_HOURS = 72;
 const REFERRAL_BONUS_DAYS = 2;
 const ELITE_THRESHOLD = 10;
 const ELITE_BONUS_DAYS = 10;
+const FREE_AUDITS_PER_TRIAL = 3;
 
-function getOrCreateUser(telegramId: string, username?: string, referredBy?: string) {
-  if (!users.has(telegramId)) {
-    const trialExpiresAt = new Date(Date.now() + TRIAL_HOURS * 3600 * 1000);
-    users.set(telegramId, {
-      telegramId,
-      username,
-      tier: "pro", // free trial = PRO for 72h
-      trialExpiresAt,
-      referredBy,
-      freeAuditsUsed: 0,
-      reserveFundTon: 0,
-      createdAt: new Date(),
-      referralCount: 0,
-    });
+async function getOrCreateUser(telegramId: string, username?: string, referredBy?: string): Promise<User> {
+  const existing = await db.select().from(usersTable).where(eq(usersTable.telegramId, telegramId)).limit(1);
+  if (existing.length) {
+    // Update lastActiveAt
+    await db.update(usersTable).set({ lastActiveAt: new Date() }).where(eq(usersTable.telegramId, telegramId));
+    return existing[0]!;
+  }
 
-    // Credit referrer if code provided
-    if (referredBy && users.has(referredBy)) {
-      const referrer = users.get(referredBy)!;
-      if (!referrals.has(referredBy)) referrals.set(referredBy, []);
-      referrals.get(referredBy)!.push(telegramId);
-      referrer.referralCount++;
+  const trialExpiresAt = new Date(Date.now() + TRIAL_HOURS * 3600 * 1000);
+  const [created] = await db.insert(usersTable).values({
+    telegramId, username, tier: "pro", trialExpiresAt,
+    referredBy: referredBy || null,
+  }).returning();
 
-      // Extend new user trial by REFERRAL_BONUS_DAYS
-      const newUser = users.get(telegramId)!;
-      newUser.trialExpiresAt = new Date(newUser.trialExpiresAt.getTime() + REFERRAL_BONUS_DAYS * 86400 * 1000);
+  // Credit referrer if valid
+  if (referredBy) {
+    const referrerRows = await db.select().from(usersTable).where(eq(usersTable.telegramId, referredBy)).limit(1);
+    if (referrerRows.length) {
+      await db.insert(referralsTable).values({
+        referrerId: referredBy, referredId: telegramId, bonusDaysGranted: REFERRAL_BONUS_DAYS,
+      });
+      // Extend new user trial
+      const extended = new Date(trialExpiresAt.getTime() + REFERRAL_BONUS_DAYS * 86400 * 1000);
+      await db.update(usersTable).set({ trialExpiresAt: extended }).where(eq(usersTable.telegramId, telegramId));
+      created!.trialExpiresAt = extended;
 
-      // Grant ELITE if referrer hit threshold
-      if (referrer.referralCount >= ELITE_THRESHOLD) {
-        referrer.tier = "elite";
-        referrer.trialExpiresAt = new Date(Date.now() + ELITE_BONUS_DAYS * 86400 * 1000);
+      // Check if referrer hit Legion threshold
+      const refCountRow = await db.execute(sql`SELECT COUNT(*)::int AS c FROM referrals WHERE referrer_id = ${referredBy}`);
+      const refCount = (refCountRow.rows[0] as any).c;
+      if (refCount >= ELITE_THRESHOLD) {
+        const eliteUntil = new Date(Date.now() + ELITE_BONUS_DAYS * 86400 * 1000);
+        await db.update(usersTable)
+          .set({ tier: "elite", trialExpiresAt: eliteUntil })
+          .where(eq(usersTable.telegramId, referredBy));
+        // Mirror to subscribers table for monetization view
+        await store.upsertSubscriber({
+          telegramId: referredBy, plan: "elite",
+          expiresAt: eliteUntil, isActive: true,
+        });
+        await store.logActivity("LEGION", `${referredBy} unlocked Legion ELITE`, `${refCount} referrals → ${ELITE_BONUS_DAYS}d ELITE bonus`, "success");
       }
     }
   }
-  return users.get(telegramId)!;
+  return created!;
 }
 
-function userToResponse(u: ReturnType<typeof getOrCreateUser>) {
+async function userToResponse(u: User) {
   const now = Date.now();
-  const trialActive = u.trialExpiresAt.getTime() > now;
-  const trialHoursLeft = Math.max(0, Math.round((u.trialExpiresAt.getTime() - now) / 3600000));
-
+  const trialExp = u.trialExpiresAt?.getTime() ?? 0;
+  const trialActive = trialExp > now;
+  const trialHoursLeft = Math.max(0, Math.round((trialExp - now) / 3600000));
   const tier = trialActive ? u.tier : "free";
 
+  const refCountRow = await db.execute(sql`SELECT COUNT(*)::int AS c FROM referrals WHERE referrer_id = ${u.telegramId}`);
+  const referralCount = (refCountRow.rows[0] as any).c;
+
   return {
-    telegramId: u.telegramId,
-    username: u.username,
-    tier,
-    trialActive,
-    trialHoursLeft,
-    trialExpiresAt: u.trialExpiresAt.toISOString(),
+    telegramId: u.telegramId, username: u.username, tier,
+    trialActive, trialHoursLeft, trialExpiresAt: u.trialExpiresAt?.toISOString() ?? null,
     freeAuditsUsed: u.freeAuditsUsed,
-    freeAuditsRemaining: Math.max(0, 3 - u.freeAuditsUsed),
-    referralCount: u.referralCount,
+    freeAuditsRemaining: Math.max(0, FREE_AUDITS_PER_TRIAL - u.freeAuditsUsed),
+    referralCount,
     eliteThreshold: ELITE_THRESHOLD,
-    eliteProgress: Math.min(u.referralCount, ELITE_THRESHOLD),
-    reserveFundTon: u.reserveFundTon.toFixed(4),
-    referralLink: `https://t.me/titan94_bot?start=ref_${u.telegramId}`,
+    eliteProgress: Math.min(referralCount, ELITE_THRESHOLD),
+    reserveFundTon: u.reserveFundTon,
+    referralLink: `https://t.me/Titan_94_agent_bot?start=ref_${u.telegramId}`,
     perks: getTierPerks(tier),
   };
 }
 
 function getTierPerks(tier: string) {
-  if (tier === "elite") {
-    return ["∞ contract audits", "Priority alerts", "Arbitrage terminal", "Knowledge Base access", "Bounty Hunter 90%", "ELITE badge"];
-  }
-  if (tier === "pro") {
-    return ["3 free audits", "Bug bounty alerts", "Arbitrage signals", "72h trial access"];
-  }
+  if (tier === "elite") return ["∞ contract audits", "Priority alerts", "Arbitrage terminal", "Knowledge Base access", "Bounty Hunter 90%", "ELITE badge"];
+  if (tier === "pro")   return ["3 free audits", "Bug bounty alerts", "Arbitrage signals", "72h trial access"];
   return ["1 audit/day", "Basic alerts"];
 }
 
 // POST /api/auth/register
-router.post("/auth/register", (req, res) => {
-  const { telegram_id, username, ref } = req.body;
+router.post("/auth/register", async (req, res) => {
+  const { telegram_id, username, ref } = req.body || {};
+  if (!telegram_id) return res.status(400).json({ error: "telegram_id required" });
 
-  if (!telegram_id) {
-    res.status(400).json({ error: "telegram_id required" });
-    return;
-  }
-
-  const user = getOrCreateUser(String(telegram_id), username, ref);
-  res.json({ success: true, user: userToResponse(user) });
+  const user = await getOrCreateUser(String(telegram_id), username, ref);
+  await store.logActivity("AUTH", "User registered", `${telegram_id}${ref ? ` (ref: ${ref})` : ""}`, "info");
+  res.json({ success: true, user: await userToResponse(user) });
 });
 
 // GET /api/auth/me/:telegramId
-router.get("/auth/me/:telegramId", (req, res) => {
-  const { telegramId } = req.params;
-  const user = getOrCreateUser(telegramId);
-  res.json(userToResponse(user));
+router.get("/auth/me/:telegramId", async (req, res) => {
+  const user = await getOrCreateUser(req.params.telegramId);
+  res.json(await userToResponse(user));
 });
 
-// POST /api/auth/referral — track a referral
-router.post("/auth/referral", (req, res) => {
-  const { referrer_id, new_user_id, new_username } = req.body;
+// POST /api/auth/referral
+router.post("/auth/referral", async (req, res) => {
+  const { referrer_id, new_user_id, new_username } = req.body || {};
+  if (!referrer_id || !new_user_id) return res.status(400).json({ error: "referrer_id and new_user_id required" });
 
-  if (!referrer_id || !new_user_id) {
-    res.status(400).json({ error: "referrer_id and new_user_id required" });
-    return;
-  }
+  await getOrCreateUser(String(referrer_id));
+  const newUser = await getOrCreateUser(String(new_user_id), new_username, String(referrer_id));
 
-  // Ensure referrer exists
-  getOrCreateUser(String(referrer_id));
-
-  // Register new user with referral
-  const newUser = getOrCreateUser(String(new_user_id), new_username, String(referrer_id));
-
-  const referrer = users.get(String(referrer_id))!;
+  const referrer = (await db.select().from(usersTable).where(eq(usersTable.telegramId, String(referrer_id))).limit(1))[0];
+  const refCountRow = await db.execute(sql`SELECT COUNT(*)::int AS c FROM referrals WHERE referrer_id = ${String(referrer_id)}`);
+  const referralCount = (refCountRow.rows[0] as any).c;
 
   res.json({
     success: true,
-    referrer: userToResponse(referrer),
-    newUser: userToResponse(newUser),
-    message: `${new_user_id} joined via referral. Referrer now has ${referrer.referralCount} referrals.`,
+    referrer: referrer ? await userToResponse(referrer) : null,
+    newUser:  await userToResponse(newUser),
+    message:  `${new_user_id} joined via referral. Referrer now has ${referralCount} referral(s).`,
   });
 });
 
-// GET /api/auth/referrals/:telegramId — get referral list
-router.get("/auth/referrals/:telegramId", (req, res) => {
-  const { telegramId } = req.params;
-  const user = users.get(telegramId);
+// GET /api/auth/referrals/:telegramId
+router.get("/auth/referrals/:telegramId", async (req, res) => {
+  const id = req.params.telegramId;
+  await getOrCreateUser(id);
 
-  if (!user) {
-    res.json({ telegramId, referrals: [], count: 0, eliteProgress: 0, eliteThreshold: ELITE_THRESHOLD });
-    return;
-  }
+  const refsRows = await db.execute(sql`
+    SELECT r.referred_id AS "telegramId", u.username, u.created_at AS "joinedAt"
+    FROM referrals r
+    LEFT JOIN users u ON u.telegram_id = r.referred_id
+    WHERE r.referrer_id = ${id}
+    ORDER BY r.created_at DESC
+  `);
+  const refs = refsRows.rows as any[];
 
-  const refs = (referrals.get(telegramId) || []).map((id) => {
-    const r = users.get(id);
-    return { telegramId: id, username: r?.username, joinedAt: r?.createdAt.toISOString() };
-  });
+  const user = (await db.select().from(usersTable).where(eq(usersTable.telegramId, id)).limit(1))[0]!;
 
   res.json({
-    telegramId,
+    telegramId: id,
     referrals: refs,
-    count: user.referralCount,
-    eliteProgress: user.referralCount,
+    count: refs.length,
+    eliteProgress: refs.length,
     eliteThreshold: ELITE_THRESHOLD,
     isElite: user.tier === "elite",
-    referralLink: `https://t.me/titan94_bot?start=ref_${telegramId}`,
+    referralLink: `https://t.me/Titan_94_agent_bot?start=ref_${id}`,
   });
 });
 
-// GET /api/stats/platform — platform-wide stats for Earn page
-router.get("/stats/platform", (_req, res) => {
-  const totalUsers = users.size;
-  const eliteUsers = [...users.values()].filter((u) => u.tier === "elite").length;
-  const totalReferrals = [...referrals.values()].reduce((s, r) => s + r.length, 0);
-  const totalReserve = [...users.values()].reduce((s, u) => s + u.reserveFundTon, 0);
+// GET /api/stats/platform — platform-wide stats
+router.get("/stats/platform", async (_req, res) => {
+  const r = await db.execute(sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM users)                                  AS total_users,
+      (SELECT COUNT(*)::int FROM users WHERE tier = 'elite')             AS elite_users,
+      (SELECT COUNT(*)::int FROM referrals)                              AS total_referrals,
+      (SELECT COALESCE(SUM(amount_ton::numeric), 0)::text
+         FROM billing_ledger WHERE type = 'bounty')                      AS total_bounty_paid,
+      (SELECT COALESCE(SUM(reserve_fund_ton::numeric), 0)::text FROM users) AS reserve_fund_ton
+  `);
+  const row = r.rows[0] as any;
 
   res.json({
-    totalUsers: totalUsers || 94,
-    eliteUsers: eliteUsers || 7,
-    totalReferrals: totalReferrals || 312,
-    totalBountyPaid: "1842.5",
-    reserveFundTon: totalReserve.toFixed(2) || "94.2",
+    totalUsers:     row.total_users     || 0,
+    eliteUsers:     row.elite_users     || 0,
+    totalReferrals: row.total_referrals || 0,
+    totalBountyPaid: parseFloat(row.total_bounty_paid).toFixed(2),
+    reserveFundTon:  parseFloat(row.reserve_fund_ton || "0").toFixed(2),
     activeSignals: Math.floor(Math.random() * 4) + 1,
     updatedAt: new Date().toISOString(),
   });
