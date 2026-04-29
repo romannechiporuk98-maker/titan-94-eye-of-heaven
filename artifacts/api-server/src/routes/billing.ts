@@ -66,6 +66,54 @@ router.get("/billing/history/:telegramId", async (req, res) => {
   res.json({ telegramId: id, history, total: history.length });
 });
 
+// AUTO-EARN distribution stats (passive yield for ELITE/PRO subscribers)
+router.get("/billing/auto-earn/stats", async (_req, res) => {
+  const subs = await store.listSubscribers();
+  const now = Date.now();
+  const active = subs.filter((s) => s.isActive && (!s.expiresAt || s.expiresAt.getTime() > now));
+  const elite = active.filter((s) => s.plan === "elite").length;
+  const pro   = active.filter((s) => s.plan === "pro").length;
+
+  const ELITE = 0.0010, PRO = 0.0003, INTERVAL = 6;
+  const cyclesPerDay = (24 * 60) / INTERVAL;
+
+  const history = await store.ledgerHistory("__all__", 1).catch(() => []);
+  // Aggregate distributed for today via raw query through store helper (re-use stats)
+  const stats = await store.ledgerStats();
+
+  res.json({
+    activeSubscribers: { elite, pro, total: elite + pro },
+    rates: { elitePerCycle: ELITE, proPerCycle: PRO, intervalMin: INTERVAL },
+    perDay: {
+      elite: (ELITE * cyclesPerDay).toFixed(4),
+      pro:   (PRO * cyclesPerDay).toFixed(4),
+    },
+    perCycleDistribution: ((elite * ELITE) + (pro * PRO)).toFixed(4),
+    perDayDistribution:   (((elite * ELITE) + (pro * PRO)) * cyclesPerDay).toFixed(4),
+    totalDistributedAllTime: parseFloat(stats.total_distributed).toFixed(4),
+    nextRunMin: INTERVAL,
+    historySample: history.length,
+  });
+});
+
+// User-specific auto-earn slice
+router.get("/billing/auto-earn/:telegramId", async (req, res) => {
+  const id  = req.params.telegramId;
+  const all = await store.ledgerHistory(id, 100);
+  const autoEarn = all.filter((e) => e.type === "auto_earn");
+  const totalAutoEarn = autoEarn.reduce((sum, e) => sum + parseFloat(e.amountTon as any), 0);
+  const sub = await store.getSubscriber(id);
+  res.json({
+    telegramId: id,
+    plan: sub?.plan ?? "free",
+    isActive: sub?.isActive ?? false,
+    autoEarnTotal: totalAutoEarn.toFixed(6),
+    autoEarnEvents: autoEarn.length,
+    nextEarn: sub?.plan === "elite" ? 0.0010 : sub?.plan === "pro" ? 0.0003 : 0,
+    last5: autoEarn.slice(0, 5),
+  });
+});
+
 router.get("/billing/stats", async (_req, res) => {
   const s = await store.ledgerStats();
   res.json({

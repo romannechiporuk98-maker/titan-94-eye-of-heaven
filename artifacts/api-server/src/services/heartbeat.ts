@@ -8,6 +8,7 @@ import https from "https";
 import { logger } from "../lib/logger";
 import * as store from "./store";
 import * as ton from "./ton-scanner";
+import { runAutoEarn } from "./autoearn";
 
 const GEMINI_KEY  = process.env["GEMINI_API_KEY"]  || "";
 const RESERVE     = store.RESERVE;
@@ -194,10 +195,14 @@ export async function startHeartbeat() {
   // Run initial scan immediately
   runScan().catch((e) => logger.warn(e, "[SCAN] initial error"));
 
-  setInterval(() => runScan().catch((e)    => logger.warn(e, "[SCAN] error")),    3 * 60 * 1000);
-  setInterval(() => runHeal().catch((e)    => logger.warn(e, "[HEAL] error")),    5 * 60 * 1000);
-  setInterval(() => runLearn().catch((e)   => logger.warn(e, "[LEARN] error")),   7 * 60 * 1000);
-  setInterval(() => runFinance().catch((e) => logger.warn(e, "[FINANCE] error")), 10 * 60 * 1000);
+  setInterval(() => runScan().catch((e)     => logger.warn(e, "[SCAN] error")),     3 * 60 * 1000);
+  setInterval(() => runHeal().catch((e)     => logger.warn(e, "[HEAL] error")),     5 * 60 * 1000);
+  setInterval(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] error")), 6 * 60 * 1000);
+  setInterval(() => runLearn().catch((e)    => logger.warn(e, "[LEARN] error")),    7 * 60 * 1000);
+  setInterval(() => runFinance().catch((e)  => logger.warn(e, "[FINANCE] error")),  10 * 60 * 1000);
+
+  // First auto-earn run shortly after boot (so demo balance grows)
+  setTimeout(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] initial error")), 30 * 1000);
 
   // Global self-healing
   process.on("uncaughtException", async (err) => {

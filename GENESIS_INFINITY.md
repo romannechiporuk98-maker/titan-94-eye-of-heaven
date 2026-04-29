@@ -10,12 +10,14 @@
 Автономний цифровий організм для захисту екосистеми TON + мультимедійний AI-агент NEXUS. Серце — 4 нескінченні цикли + multimedia layer:
 
 ```
-👁 SCAN     кожні 3 хв  → читає TonCenter, фіксує загрози, пише в БД
-⚡ HEAL     кожні 5 хв  → бере активну вразливість, лікує (Gemini → план)
-🧠 LEARN    кожні 7 хв  → генерує новий regex-патерн, сам вчиться
-💰 FINANCE  кожні 10 хв → рахує підписників, експайрить, читає Reserve on-chain
+👁 SCAN       кожні 3 хв  → читає TonCenter, фіксує загрози, пише в БД
+⚡ HEAL       кожні 5 хв  → бере активну вразливість, лікує (Gemini → план)
+💎 AUTO-EARN  кожні 6 хв  → нараховує passive yield ELITE/PRO підписникам
+🧠 LEARN      кожні 7 хв  → генерує новий regex-патерн, сам вчиться
+💰 FINANCE    кожні 10 хв → рахує підписників, експайрить, читає Reserve on-chain
 
 ⊕ NEXUS    on-demand   → Gemini 2.0 multimedia: сайт/код/зображення/відео/фільм/бот/музика/текст
+⊕ TMA      on-launch   → Telegram Mini App: автологін через initDataUnsafe + auto-register
 ```
 
 Архітектура (Master Protocol Layer 1-8):
@@ -127,7 +129,9 @@ PHASE 6  EXECUTION     ✅ TON payment webhook with on-chain verification
 PHASE 7  TON           ✅ Reserve fund live read · CPA 15% · subscription activation
 PHASE 8  EXCHANGE      ✅ STON.fi + DeDust arbitrage scanner
 PHASE 9  MULTIMEDIA    ✅ NEXUS multimedia agent (Gemini 2.0 Flash) · 8 capability modes
-PHASE ∞  EVOLUTION     ✅ Self-healing · self-learning · self-financing
+PHASE 10 TMA           ✅ Telegram Mini App SDK · auto-register · haptic feedback · Tonkeeper deep-links
+PHASE 11 AUTO-EARN     ✅ Passive yield distribution: ELITE 0.24 TON/d · PRO 0.072 TON/d · кожні 6хв
+PHASE ∞  EVOLUTION     ✅ Self-healing · self-learning · self-financing · self-rewarding
 ```
 
 ---
@@ -173,6 +177,8 @@ PHASE ∞  EVOLUTION     ✅ Self-healing · self-learning · self-financing
 ### Earn
 - `GET  /billing/balance/:tgId` `/history/:tgId` `/stats`
 - `POST /billing/withdraw`
+- `GET  /billing/auto-earn/stats` ← глобальна статистика passive yield
+- `GET  /billing/auto-earn/:tgId` ← мій slice: total, events, nextEarn
 - `GET  /arbitrage` (live STON.fi × DeDust)
 
 ### Ecosystem
@@ -298,9 +304,68 @@ PORT=5173 pnpm --filter @workspace/enact-dashboard run dev &
 
 ---
 
-## 11. БУДУЩЕ — куди розширювати
+## 11. TMA — TELEGRAM MINI APP
 
-- **TMA** (Telegram Mini App) — завернути dashboard в `WebApp` SDK + TON Connect 2.0
+### Як це працює
+
+1. У `index.html` підключено офіційний `<script src="https://telegram.org/js/telegram-web-app.js">`
+2. `src/lib/telegram.ts` обгортає `window.Telegram.WebApp`:
+   - `initTelegram()` — викликає `ready()`, `expand()`, фіксує тему
+   - `getTgUser()` — витягує реальний `telegram_id`, `username` з `initDataUnsafe.user` (або `demo_user` у браузері)
+   - `haptic("success" | "error" | "light"...)` — вібровідгук на кнопках
+3. У `App.tsx` через `useEffect` при першому рендері:
+   - ініціалізує WebApp
+   - POST `/api/auth/register` з реальним TG ID → user створюється в БД, баланс/реферали одразу пишуться під його ID
+   - якщо є `start_param` (наприклад `?start=ref_12345`) — реферальний зв'язок реєструється
+
+### Як підключити до Bot
+1. Створи бота в @BotFather → `/newbot`
+2. `/setmenubutton` → введи URL твоєї опубліковки (наприклад `https://titan-94.replit.app`)
+3. Все. Користувач тисне кнопку «Open» в боті → відкриває Mini App → автоматично логіниться
+
+### Що дає TMA на /earn
+- бейдж **● TMA** (real) або **◌ DEMO** (browser)
+- haptic feedback на КОПІЮВАТИ / ВИВЕСТИ / SUBSCRIBE
+- Tonkeeper deep-link при оплаті (один тап → відкривається TON-гаманець з заповненою сумою і коментарем)
+
+---
+
+## 12. AUTO-EARN — АВТОЗАРОБІТОК
+
+### Як працює
+Кожні **6 хвилин** `runAutoEarn()` (services/autoearn.ts):
+1. Бере всіх активних підписників з `subscribers` де `is_active=true && expires_at > now`
+2. Для кожного нараховує passive yield в `billing_ledger` (type=`auto_earn`):
+   - **ELITE** → 0.0010 TON/cycle = **0.24 TON/день** (≈ 7.2 TON/міс — повертає підписку 20 TON за ~3 міс)
+   - **PRO**   → 0.0003 TON/cycle = **0.072 TON/день** (≈ 2.16 TON/міс — повертає 5 TON за ~70 днів)
+   - **FREE**  → 0
+3. Логує `AUTO-EARN` activity з розподіленою сумою
+4. Користувач може вивести через `/api/billing/withdraw` коли баланс ≥ 0.5 TON
+
+### Звідки беруться TON
+- Arbitrage profits (STON.fi × DeDust scanner)
+- Bug bounty pool з Reserve Fund
+- Subscription revenue (5 TON × N + 20 TON × M на місяць)
+
+При живому навантаженні Reserve Fund постійно поповнюється платежами, а AUTO-EARN автоматично перерозподіляє частину профіту назад тримачам ELITE/PRO — **це програмний UBI всередині TITAN-94**.
+
+### Endpoints
+```bash
+curl localhost:80/api/billing/auto-earn/stats
+# {"activeSubscribers":{"elite":2,"pro":1,"total":3},
+#  "rates":{"elitePerCycle":0.001,"proPerCycle":0.0003,"intervalMin":6},
+#  "perDay":{"elite":"0.2400","pro":"0.0720"},
+#  "perDayDistribution":"0.5520"}
+
+curl localhost:80/api/billing/auto-earn/<tgId>
+# {"plan":"pro","autoEarnTotal":"0.000300","autoEarnEvents":1,"nextEarn":0.0003,"last5":[...]}
+```
+
+---
+
+## 13. БУДУЩЕ — куди розширювати
+
+- **TON Connect 2.0** — підключити справжній гаманець користувача замість Tonkeeper deep-link
 - **Tact-контракти** `GenesisTitan` + `Titan94Agent` (вже є в `Titan_94_agent/contracts/`) — задеплоїти на TON mainnet через blueprint
 - **WebSocket-стрім** подій з TonCenter (зараз через polling) — окремий мікросервіс
 - **ML-модель** для honeypot-детекції замість regex (Phase ∞ Evolution)

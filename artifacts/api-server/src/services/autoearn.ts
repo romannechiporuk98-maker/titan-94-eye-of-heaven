@@ -37,7 +37,6 @@ export async function runAutoEarn() {
     }
   }
 
-  await store.bumpCycle("autoEarnCycles", { lastAutoEarn: new Date() });
   await store.logActivity(
     "AUTO-EARN",
     `Distributed ${distributed.toFixed(4)} TON to ${elite + pro} subscribers`,

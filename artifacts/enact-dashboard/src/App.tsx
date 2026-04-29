@@ -60,7 +60,7 @@ export default function App() {
       body: JSON.stringify({
         telegram_id: u.id,
         username: u.username || u.name,
-        ref_code: u.startParam,
+        ref: u.startParam,
       }),
     }).catch(() => {});
   }, []);
