@@ -11,6 +11,7 @@
 import { logger } from "../lib/logger";
 import * as store from "./store";
 import * as ton from "./ton-scanner";
+import * as eye from "./eye";
 import { sendNotification, sendCriticalAlert } from "./telegram-bot";
 
 const RESERVE = store.RESERVE;
@@ -39,6 +40,8 @@ export async function runTonPoller(): Promise<{ processed: number; activated: nu
     if (inMsg.destination !== RESERVE && !inMsg.destination?.endsWith(RESERVE.slice(-10))) continue;
 
     const txHash = tx.transaction_id.hash;
+    // Eye of God dedup — also blocks duplicate processing organism-wide
+    if (!eye.observe("ton-tx", [txHash], { dst: inMsg.destination })) continue;
     const existing = await store.findPayment(txHash);
     if (existing) continue;
     processed++;

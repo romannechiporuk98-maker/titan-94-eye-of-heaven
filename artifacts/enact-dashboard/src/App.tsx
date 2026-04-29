@@ -26,6 +26,8 @@ import DeveloperPage from "@/pages/developer";
 import BuilderPage from "@/pages/builder";
 import AutoTradePage from "@/pages/autotrade";
 import SettingsPage from "@/pages/settings";
+import Protocol94Page from "@/pages/protocol-94";
+import { Splash } from "@/components/splash";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -50,6 +52,7 @@ function Router() {
         <Route path="/builder"        component={BuilderPage}   />
         <Route path="/autotrade"      component={AutoTradePage} />
         <Route path="/settings"       component={SettingsPage}  />
+        <Route path="/protocol-94"    component={Protocol94Page}/>
         <Route path="/enact"          component={Home}          />
         <Route path="/jobs"           component={Jobs}          />
         <Route path="/jobs/:address"  component={JobDetail}     />
@@ -89,6 +92,7 @@ export default function App() {
           <WouterRouter base={base}>
             <Router />
           </WouterRouter>
+          <Splash />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

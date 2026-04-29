@@ -23,6 +23,7 @@ import creatorAiRouter     from "./creator-ai";
 import agentsRouter        from "./agents";
 import autotradeRouter     from "./autotrade";
 import secretsRouter       from "./secrets";
+import mirrorRouter        from "./mirror";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(creatorAiRouter);
 router.use(agentsRouter);
 router.use(autotradeRouter);
 router.use(secretsRouter);
+router.use(mirrorRouter);
 
 export default router;

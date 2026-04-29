@@ -6,6 +6,7 @@
  */
 import https from "https";
 import { logger } from "../lib/logger";
+import * as sentinel from "./sentinel";
 import * as store from "./store";
 import * as ton from "./ton-scanner";
 import { runAutoEarn } from "./autoearn";
@@ -199,14 +200,21 @@ export async function startHeartbeat() {
   // Run initial scan immediately
   runScan().catch((e) => logger.warn(e, "[SCAN] initial error"));
 
-  setInterval(() => runScan().catch((e)     => logger.warn(e, "[SCAN] error")),     3 * 60 * 1000);
-  setInterval(() => runHeal().catch((e)     => logger.warn(e, "[HEAL] error")),     5 * 60 * 1000);
-  setInterval(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] error")), 6 * 60 * 1000);
-  setInterval(() => runLearn().catch((e)    => logger.warn(e, "[LEARN] error")),    7 * 60 * 1000);
-  setInterval(() => runFinance().catch((e)  => logger.warn(e, "[FINANCE] error")),  10 * 60 * 1000);
-  setInterval(() => runTonPoller().catch((e) => logger.warn(e, "[TON-POLLER] error")), 2 * 60 * 1000);
-  setInterval(() => runDueAgents().catch((e) => logger.warn(e, "[AGENTS] error")), 60 * 1000);
-  setInterval(() => runAutoTradeCycle().catch((e) => logger.warn(e, "[AUTO-TRADE] error")), 3 * 60 * 1000);
+  // Wrap every cycle with sentinel.guard for auto-quarantine + heal
+  const wrap = (name: string, fn: () => Promise<any>, intervalMs: number) => {
+    setInterval(async () => {
+      sentinel.recordBeat(name, intervalMs);
+      await sentinel.guard(name, fn, null);
+    }, intervalMs);
+  };
+  wrap("scan",       runScan,           3  * 60 * 1000);
+  wrap("heal",       runHeal,           5  * 60 * 1000);
+  wrap("auto-earn",  runAutoEarn,       6  * 60 * 1000);
+  wrap("learn",      runLearn,          7  * 60 * 1000);
+  wrap("finance",    runFinance,        10 * 60 * 1000);
+  wrap("ton-poller", runTonPoller,      2  * 60 * 1000);
+  wrap("agents",     runDueAgents,      60 * 1000);
+  wrap("auto-trade", runAutoTradeCycle, 3  * 60 * 1000);
 
   // First auto-earn run shortly after boot (so demo balance grows)
   setTimeout(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] initial error")), 30 * 1000);
