@@ -15,6 +15,8 @@ import aiEvolutionRouter   from "./ai-evolution";
 import webhookRouter       from "./webhook";
 import nexusRouter         from "./nexus";
 import dashboardRouter     from "./dashboard";
+import telegramRouter      from "./telegram";
+import tonRouter2          from "./ton";
 
 const router: IRouter = Router();
 
@@ -34,5 +36,7 @@ router.use(aiEvolutionRouter);
 router.use(webhookRouter);
 router.use(nexusRouter);
 router.use(dashboardRouter);
+router.use(telegramRouter);
+router.use(tonRouter2);
 
 export default router;

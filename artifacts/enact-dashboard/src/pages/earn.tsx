@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Copy, Users, TrendingUp, Zap, DollarSign, ArrowDownToLine,
-  Shield, Star, Sparkles, Crown, Send,
+  Shield, Star, Sparkles, Crown, Send, Wallet,
 } from "lucide-react";
+import { TonConnectButton, useTonAddress, useTonConnectUI } from "@tonconnect/ui-react";
 import { useToast } from "@/hooks/use-toast";
 import { getTgUser, haptic } from "@/lib/telegram";
+import { buildPaymentTx, shortAddr } from "@/lib/tonconnect";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (path: string) => `${BASE}/api${path}`;
@@ -30,6 +32,10 @@ export default function EarnPage() {
   const [withdrawAddr, setWithdrawAddr] = useState("");
   const [withdrawing, setWithdrawing]   = useState(false);
   const [subscribing, setSubscribing]   = useState<string | null>(null);
+  const [paying, setPaying]             = useState<string | null>(null);
+
+  const tonAddress = useTonAddress();
+  const [tonConnectUI] = useTonConnectUI();
 
   const { data: arb }       = usePoll("/arbitrage", 8000);
   const { data: billing }   = usePoll(`/billing/balance/${TG_ID}`, 8000);
@@ -83,6 +89,49 @@ export default function EarnPage() {
     } finally { setWithdrawing(false); }
   };
 
+  const payWithWallet = async (plan: "pro" | "elite") => {
+    if (!tonAddress) {
+      haptic("warning");
+      toast({ title: "Підключи TON гаманець", description: "Натисни кнопку 'Connect Wallet' вище" });
+      return;
+    }
+    setPaying(plan);
+    haptic("medium");
+    try {
+      const tx = buildPaymentTx(plan, TG_ID);
+      const result = await tonConnectUI.sendTransaction(tx);
+      // Notify backend so it can speed up activation
+      await fetch(api("/webhook/ton-payment"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          txHash: result.boc.slice(0, 64),
+          fromAddress: tonAddress,
+          toAddress: RESERVE_WALLET,
+          amountNano: String((plan === "pro" ? 5 : 20) * 1e9),
+          telegramId: TG_ID,
+          comment: `tg:${TG_ID}:${plan}`,
+        }),
+      }).catch(() => {});
+      haptic("success");
+      toast({
+        title: `🚀 Транзакцію надіслано!`,
+        description: "Очікую підтвердження в мережі (1-2 хв). Підписка активується автоматично.",
+      });
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: [`/monetization/status/${TG_ID}`] });
+        qc.invalidateQueries({ queryKey: [`/billing/auto-earn/${TG_ID}`] });
+      }, 5000);
+    } catch (e: any) {
+      haptic("error");
+      if (String(e?.message || "").toLowerCase().includes("reject")) {
+        toast({ title: "Транзакцію відхилено", description: "Користувач скасував у гаманці", variant: "destructive" });
+      } else {
+        toast({ title: "Помилка платежу", description: e.message || "Невідома", variant: "destructive" });
+      }
+    } finally { setPaying(null); }
+  };
+
   const subscribe = async (plan: "pro" | "elite") => {
     setSubscribing(plan);
     haptic("medium");
@@ -128,17 +177,63 @@ export default function EarnPage() {
 
   return (
     <div className="titan-page">
-      <div className="titan-page-header flex justify-between items-start">
+      <div className="titan-page-header flex justify-between items-start gap-3">
         <div>
           <h1 className="titan-title">◈ EARN TERMINAL</h1>
           <p className="titan-subtitle">Авто-заробіток · Реферали · Арбітраж · Withdraw</p>
         </div>
-        <div className="text-right text-xs">
-          <div className={`titan-badge ${tg.isReal ? "titan-badge-safe" : "titan-badge-amber"}`}>
-            {tg.isReal ? "● TMA" : "◌ DEMO"}
+        <div className="flex flex-col items-end gap-2">
+          <TonConnectButton />
+          <div className="text-right text-xs">
+            <div className={`titan-badge ${tg.isReal ? "titan-badge-safe" : "titan-badge-amber"}`}>
+              {tg.isReal ? "● TMA" : "◌ DEMO"}
+            </div>
+            <div className="text-muted mt-1 truncate max-w-[140px]">{tg.name}</div>
           </div>
-          <div className="text-muted mt-1 truncate max-w-[140px]">{tg.name}</div>
         </div>
+      </div>
+
+      {/* ─── TON CONNECT WALLET ─── */}
+      <div className="titan-card mb-4" style={{ borderColor: tonAddress ? "#00FF88" : "rgba(255,255,255,0.1)" }}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Wallet className={`w-5 h-5 ${tonAddress ? "text-safe" : "text-muted"}`} />
+            <span className="titan-label">TON CONNECT — ПЛАТЕЖІ В 1 ТАП</span>
+          </div>
+          <span className={`titan-badge ${tonAddress ? "titan-badge-safe" : ""}`}>
+            {tonAddress ? "● CONNECTED" : "◌ NOT CONNECTED"}
+          </span>
+        </div>
+        {tonAddress ? (
+          <>
+            <div className="text-sm text-foreground font-mono mb-3">{shortAddr(tonAddress, 10, 8)}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className="titan-btn"
+                onClick={() => payWithWallet("pro")}
+                disabled={paying !== null}
+              >
+                <Zap className="w-4 h-4 mr-1" />
+                Pay 5 TON · PRO {paying === "pro" && "..."}
+              </button>
+              <button
+                className="titan-btn titan-btn-amber"
+                onClick={() => payWithWallet("elite")}
+                disabled={paying !== null}
+              >
+                <Crown className="w-4 h-4 mr-1" />
+                Pay 20 TON · ELITE {paying === "elite" && "..."}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted mt-2">
+              Натисни — гаманець відкриється з готовою транзакцією. TON-POLLER підтвердить on-chain і активує підписку через 1-2 хв.
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-muted">
+            Підключи Tonkeeper / MyTonWallet / Tonhub через кнопку вгорі — і плати за PRO/ELITE одним тапом без копіювання адрес.
+          </p>
+        )}
       </div>
 
       {/* ─── AUTO-EARN PASSIVE YIELD ─── */}

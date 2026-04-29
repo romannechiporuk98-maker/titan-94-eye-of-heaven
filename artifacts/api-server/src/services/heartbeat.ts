@@ -9,6 +9,8 @@ import { logger } from "../lib/logger";
 import * as store from "./store";
 import * as ton from "./ton-scanner";
 import { runAutoEarn } from "./autoearn";
+import { runTonPoller } from "./ton-poller";
+import { startTelegramBot, sendCriticalAlert } from "./telegram-bot";
 
 const GEMINI_KEY  = process.env["GEMINI_API_KEY"]  || "";
 const RESERVE     = store.RESERVE;
@@ -200,9 +202,17 @@ export async function startHeartbeat() {
   setInterval(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] error")), 6 * 60 * 1000);
   setInterval(() => runLearn().catch((e)    => logger.warn(e, "[LEARN] error")),    7 * 60 * 1000);
   setInterval(() => runFinance().catch((e)  => logger.warn(e, "[FINANCE] error")),  10 * 60 * 1000);
+  setInterval(() => runTonPoller().catch((e) => logger.warn(e, "[TON-POLLER] error")), 2 * 60 * 1000);
 
   // First auto-earn run shortly after boot (so demo balance grows)
   setTimeout(() => runAutoEarn().catch((e) => logger.warn(e, "[AUTO-EARN] initial error")), 30 * 1000);
+  setTimeout(() => runTonPoller().catch((e) => logger.warn(e, "[TON-POLLER] initial error")), 15 * 1000);
+
+  // Start Telegram bot (no-op if TELEGRAM_BOT_TOKEN absent)
+  startTelegramBot().catch((e) => logger.warn(e, "[TG-BOT] start error"));
+
+  // Boot announcement to admin
+  sendCriticalAlert("🛡 TITAN-94 BOOT", "All cycles active: SCAN/HEAL/LEARN/FINANCE/AUTO-EARN/TON-POLLER. Telegram bot online.", "medium").catch(() => {});
 
   // Global self-healing
   process.on("uncaughtException", async (err) => {

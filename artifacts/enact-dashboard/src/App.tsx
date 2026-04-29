@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
@@ -65,14 +66,22 @@ export default function App() {
     }).catch(() => {});
   }, []);
 
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  // Manifest must be a fully-qualified absolute URL — TON Connect rejects relative paths
+  const manifestUrl = typeof window !== "undefined"
+    ? `${window.location.origin}${base}/tonconnect-manifest.json`
+    : "/tonconnect-manifest.json";
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <TonConnectUIProvider manifestUrl={manifestUrl}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={base}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </TonConnectUIProvider>
   );
 }
