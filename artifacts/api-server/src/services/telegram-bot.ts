@@ -34,16 +34,22 @@ function appLink(path = ""): string {
 function mainMenu(): InlineKeyboard {
   const kb = new InlineKeyboard();
   if (APP_URL) {
-    kb.webApp("🚀 Open TITAN-94", appLink("/"))
+    kb.webApp("🚀 Command Center", appLink("/"))
       .row()
-      .webApp("💰 Earn Terminal", appLink("/earn"))
+      .webApp("⚒ Agent Forge", appLink("/builder"))
+      .webApp("💎 Developer", appLink("/developer"))
+      .row()
+      .webApp("💰 Earnings", appLink("/earn"))
       .webApp("✨ NEXUS AI", appLink("/nexus"));
   }
   kb.row()
-    .text("📊 My Balance", "balance")
+    .text("📊 Balance", "balance")
     .text("🛡 Subscribe", "subscribe")
     .row()
-    .text("⚡ Live Alerts", "alerts")
+    .text("🤖 My Agents", "agents")
+    .text("📡 Status", "status")
+    .row()
+    .text("⚡ Alerts", "alerts")
     .text("ℹ Help", "help");
   return kb;
 }
@@ -188,8 +194,89 @@ ${refId ? `\n✅ Ти зайшов за рефералом *${refId}* — отр
       `/scan <address> — audit a TON contract\n` +
       `/subscribe — buy PRO/ELITE\n` +
       `/alerts — recent critical alerts\n` +
+      `/agents — list your custom agents\n` +
+      `/forge — open Agent Forge to build new agent\n` +
+      `/dev — Developer mode (1000 TON tier)\n` +
+      `/status — live system telemetry\n` +
       `/help — this message\n\n` +
       `_Reserve wallet:_ \`${RESERVE}\``,
+      { parse_mode: "Markdown" },
+    );
+  });
+
+  // /agents — list user's custom agents
+  bot.command("agents", async (ctx) => {
+    const { id } = fmtUser(ctx);
+    const agentSvc = await import("./agents");
+    const list = await agentSvc.listAgents(id);
+    if (list.length === 0) {
+      const kb = new InlineKeyboard();
+      if (APP_URL) kb.webApp("⚒ Open Agent Forge", appLink("/builder"));
+      return ctx.reply(
+        `🤖 *Your Custom Agents*\n\n_У тебе ще нема агентів._\n\nAgent Forge дозволяє створити власного AI-агента (Guardian, Trader, Researcher, Yield-Farmer чи з нуля). Безкоштовний ліміт: 3 агенти.`,
+        { parse_mode: "Markdown", reply_markup: kb },
+      );
+    }
+    const lines = list.slice(0, 10).map((a) => {
+      const rate = a.runs ? Math.round((a.successes / a.runs) * 100) : 0;
+      const status = a.enabled ? "✅" : "⏸";
+      return `${status} *${a.name}* — runs: ${a.runs} · ${rate}% · every ${a.intervalMin}m`;
+    }).join("\n");
+    const kb = new InlineKeyboard();
+    if (APP_URL) kb.webApp("⚒ Manage in Forge", appLink("/builder"));
+    await ctx.reply(`🤖 *Your Custom Agents (${list.length})*\n\n${lines}`, { parse_mode: "Markdown", reply_markup: kb });
+  });
+
+  // /forge — open agent builder
+  bot.command("forge", async (ctx) => {
+    const kb = new InlineKeyboard();
+    if (APP_URL) kb.webApp("⚒ Open Agent Forge", appLink("/builder"));
+    await ctx.reply(
+      `⚒ *AGENT FORGE*\n\n` +
+      `Збери власного автономного AI-агента під свою задачу:\n\n` +
+      `🛡 *Guardian* — захист гаманця, моніторинг загроз\n` +
+      `📈 *Trader Scout* — арбітражні можливості\n` +
+      `🔬 *Researcher* — глибокий аналіз TON-проектів\n` +
+      `🌾 *Yield Farmer* — пасивний дохід через моніторинг\n` +
+      `⚙ *DevOps* — автономний engineer\n\n` +
+      `Або з нуля — обери інструменти, інтервал, цілі.`,
+      { parse_mode: "Markdown", reply_markup: kb },
+    );
+  });
+
+  // /dev — Developer mode 1000 TON tier
+  bot.command(["dev", "developer"], async (ctx) => {
+    const kb = new InlineKeyboard();
+    if (APP_URL) kb.webApp("💎 Activate Developer Tier", appLink("/developer"));
+    await ctx.reply(
+      `💎 *DEVELOPER MODE — 1000 TON*\n\n` +
+      `Найвищий рівень. Перки:\n` +
+      `• 10 000 API requests/день\n` +
+      `• 0.05 TON/cycle ≈ 12 TON/день passive yield\n` +
+      `• Кастомізація політик безпеки\n` +
+      `• Priority queue в усіх AI-операціях\n` +
+      `• Всі ELITE features\n` +
+      `• Unlimited custom agents\n\n` +
+      `Оплата 1-tap через TON Connect (Tonkeeper).`,
+      { parse_mode: "Markdown", reply_markup: kb },
+    );
+  });
+
+  // /status — live telemetry snapshot
+  bot.command("status", async (ctx) => {
+    const subs = await store.listSubscribers();
+    const stats = await store.vulnStats();
+    const agentState = await store.getAgentState();
+    const acc = (parseFloat((agentState as any).accuracy || "0") * 100).toFixed(1);
+    await ctx.reply(
+      `📡 *TITAN-94 LIVE TELEMETRY*\n\n` +
+      `🛡 Threats: *${stats.total}* (${stats.critical} crit · ${stats.high} high)\n` +
+      `⚡ Healed: *${stats.healed}*\n` +
+      `🧠 AI Accuracy: *${acc}%* (${(agentState as any).knowledgeSize} patterns)\n` +
+      `🔄 Cycles: SCAN ${(agentState as any).cycles} · HEAL ${(agentState as any).healingCycles} · LEARN ${(agentState as any).learnCycles}\n` +
+      `👥 Subscribers: *${subs.length}*\n` +
+      `💰 At-Risk TVL: $${parseFloat(stats.tvl_at_risk || "0").toLocaleString()}\n\n` +
+      `_All systems nominal · Heartbeat active_`,
       { parse_mode: "Markdown" },
     );
   });
@@ -198,7 +285,9 @@ ${refId ? `\n✅ Ти зайшов за рефералом *${refId}* — отр
   bot.callbackQuery("balance",   (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/balance", entities: [{ type: "bot_command", offset: 0, length: 8 }] } } as any).catch(() => {}); });
   bot.callbackQuery("subscribe", (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/subscribe", entities: [{ type: "bot_command", offset: 0, length: 10 }] } } as any).catch(() => {}); });
   bot.callbackQuery("alerts",    (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/alerts", entities: [{ type: "bot_command", offset: 0, length: 7 }] } } as any).catch(() => {}); });
-  bot.callbackQuery("help",      (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/help", entities: [{ type: "bot_command", offset: 0, length: 5 }] } } as any).catch(() => {}); });
+  bot.callbackQuery("help",      (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/help",   entities: [{ type: "bot_command", offset: 0, length: 5 }] } } as any).catch(() => {}); });
+  bot.callbackQuery("agents",    (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/agents", entities: [{ type: "bot_command", offset: 0, length: 7 }] } } as any).catch(() => {}); });
+  bot.callbackQuery("status",    (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/status", entities: [{ type: "bot_command", offset: 0, length: 7 }] } } as any).catch(() => {}); });
 
   bot.catch((err) => logger.error({ err: err.error }, "[TG-BOT] handler error"));
   return bot;

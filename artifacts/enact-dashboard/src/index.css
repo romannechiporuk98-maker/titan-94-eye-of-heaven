@@ -384,6 +384,82 @@
 }
 
 /* ── Cycle card ── */
+/* === LIVE PROTOCOL ANIMATIONS === */
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.6; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,255,255,0.2), inset 0 0 4px rgba(0,255,255,0.05); }
+  50%      { box-shadow: 0 0 24px rgba(0,255,255,0.5), inset 0 0 8px rgba(0,255,255,0.15); }
+}
+@keyframes amberGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,140,0,0.2), inset 0 0 4px rgba(255,140,0,0.05); }
+  50%      { box-shadow: 0 0 24px rgba(255,140,0,0.5), inset 0 0 8px rgba(255,140,0,0.15); }
+}
+@keyframes ecg {
+  0%   { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes radarSweep {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes counterRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.titan-live-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(0,12,24,0.85), rgba(0,8,16,0.95));
+  border: 1px solid rgba(0,255,255,0.15);
+  animation: glowPulse 4s ease-in-out infinite;
+}
+.titan-live-card::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,255,0.6), transparent);
+  animation: scanLine 6s linear infinite;
+}
+.titan-live-card-amber { border-color: rgba(255,140,0,0.25); animation: amberGlow 4s ease-in-out infinite; }
+.titan-counter { animation: counterRise 0.4s ease-out; font-variant-numeric: tabular-nums; }
+
+.titan-radar-sweep {
+  position: absolute; inset: 0;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(0,255,255,0.4) 30deg, transparent 60deg);
+  border-radius: 50%;
+  animation: radarSweep 4s linear infinite;
+  pointer-events: none;
+}
+
+.titan-ring {
+  --p: 0;
+  background: conic-gradient(var(--ring-color, #00FFFF) calc(var(--p) * 3.6deg), rgba(255,255,255,0.05) 0deg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.titan-ring::before {
+  content: ""; position: absolute; inset: 6px;
+  background: #060F1A; border-radius: 50%;
+}
+.titan-ring > * { position: relative; z-index: 1; }
+
+.titan-ecg-path {
+  fill: none; stroke: #00FF88; stroke-width: 1.5;
+  stroke-dasharray: 1000; stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 4px rgba(0,255,136,0.6));
+  animation: ecg 3s linear infinite;
+}
+
+.titan-grid-bg {
+  background-image:
+    linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 .titan-cycle-card {
   padding: 0.75rem;
   background: rgba(0,255,255,0.03);
