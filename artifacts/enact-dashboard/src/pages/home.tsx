@@ -39,8 +39,7 @@ export default function Home() {
           <StatCard
             title="Total Volume (TON)"
             value={`${stats.totalVolumeTon} TON`}
-            icon={<Database className="h-4 w-4" />}
-            className="border-primary/20 bg-primary/5"
+            icon={<Database className="h-4 w-4 text-primary" />}
           />
           <StatCard
             title="Total Jobs"

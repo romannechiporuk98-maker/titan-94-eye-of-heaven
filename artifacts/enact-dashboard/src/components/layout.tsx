@@ -14,10 +14,10 @@ import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
   Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound, Crown,
-  Menu, X, Sun, Moon, Languages,
+  Menu, X, Sun, Moon, Languages, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme, useLang, t, type Lang } from "@/lib/ui-prefs";
+import { useTheme, useLang, useTimezone, fmtClock, resolveTz, TZ_OPTIONS, t, type Lang } from "@/lib/ui-prefs";
 
 type NavItem = { href: string; tkey: string; icon: typeof Cpu; group: "titan" | "agent" | "enact" };
 
@@ -50,17 +50,28 @@ const GROUPS = ["titan", "agent", "enact"] as const;
 function PrefsCluster({ compact = false }: { compact?: boolean }) {
   const { theme, toggle } = useTheme();
   const { lang, setLang } = useLang();
-  const [open, setOpen] = useState(false);
+  const { tz, setTz } = useTimezone();
+  const [openLang, setOpenLang] = useState(false);
+  const [openTz,   setOpenTz]   = useState(false);
+  const [now,      setNow]      = useState(() => new Date());
   const ref = useRef<HTMLDivElement>(null);
 
+  // Live clock updates every second
   useEffect(() => {
-    if (!open) return;
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!openLang && !openTz) return;
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpenLang(false); setOpenTz(false);
+      }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
+  }, [openLang, openTz]);
 
   const langs: { code: Lang; label: string; flag: string }[] = [
     { code: "uk", label: "Українська", flag: "UA" },
@@ -68,12 +79,29 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
     { code: "ru", label: "Русский",    flag: "RU" },
   ];
   const currentFlag = langs.find(l => l.code === lang)?.flag ?? "UA";
+  const tzShort = tz === "auto"
+    ? resolveTz("auto").split("/").pop()?.replace("_", " ") ?? "Local"
+    : tz.split("/").pop()?.replace("_", " ") ?? tz;
 
   const btnSize = compact ? "p-1.5" : "p-2";
-  const iconSize = compact ? "w-4 h-4" : "w-4 h-4";
+  const iconSize = "w-4 h-4";
 
   return (
     <div className="flex items-center gap-1" ref={ref}>
+      {/* Live clock — desktop only (mobile sees per-tz clock inside the picker) */}
+      <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded border tabular-nums"
+        style={{
+          borderColor: "rgba(0,255,255,0.2)",
+          color: "rgba(207,255,255,0.85)",
+          background: "transparent",
+          fontSize: compact ? "10px" : "11px",
+          fontFamily: "'Space Mono', monospace",
+        }}
+        title={`${tzShort} · ${resolveTz(tz)}`}>
+        <Clock className="w-3 h-3 opacity-60" />
+        <span>{fmtClock(now, tz)}</span>
+      </div>
+
       {/* Theme toggle */}
       <button onClick={toggle}
         className={`${btnSize} rounded border transition-colors`}
@@ -87,9 +115,40 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
         {theme === "dark" ? <Sun className={iconSize} /> : <Moon className={iconSize} />}
       </button>
 
+      {/* Timezone picker */}
+      <div className="relative">
+        <button onClick={() => { setOpenTz(o => !o); setOpenLang(false); }}
+          className={`${btnSize} rounded border transition-colors flex items-center gap-1`}
+          style={{
+            borderColor: "rgba(0,255,255,0.3)",
+            color: "var(--titan-primary, #00FFFF)",
+            background: "transparent",
+          }}
+          aria-label={t("btn.tz", lang)}
+          title={`${t("btn.tz", lang)} · ${tzShort}`}>
+          <Clock className={iconSize} />
+          <span className="text-[10px] font-bold tracking-wider hidden sm:inline">{tzShort.slice(0,3).toUpperCase()}</span>
+        </button>
+        {openTz && (
+          <div className="absolute right-0 top-full mt-1 z-[100] min-w-[180px] border shadow-lg"
+            style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.3)" }}>
+            {TZ_OPTIONS.map(o => (
+              <button key={o.value}
+                onClick={() => { setTz(o.value); setOpenTz(false); }}
+                className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-cyan-400/10 transition-colors"
+                style={{ color: o.value === tz ? "#00FFFF" : "rgba(207,255,255,0.7)" }}>
+                <span className="flex-1">{o.label}</span>
+                <span className="text-[10px] opacity-60 tabular-nums">{fmtClock(now, o.value)}</span>
+                {o.value === tz && <span className="text-[10px]">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Language picker */}
       <div className="relative">
-        <button onClick={() => setOpen(o => !o)}
+        <button onClick={() => { setOpenLang(o => !o); setOpenTz(false); }}
           className={`${btnSize} rounded border transition-colors flex items-center gap-1`}
           style={{
             borderColor: "rgba(0,255,255,0.3)",
@@ -101,12 +160,12 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
           <Languages className={iconSize} />
           <span className="text-[10px] font-bold tracking-wider">{currentFlag}</span>
         </button>
-        {open && (
+        {openLang && (
           <div className="absolute right-0 top-full mt-1 z-[100] min-w-[140px] border shadow-lg"
             style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.3)" }}>
             {langs.map(l => (
               <button key={l.code}
-                onClick={() => { setLang(l.code); setOpen(false); }}
+                onClick={() => { setLang(l.code); setOpenLang(false); }}
                 className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-cyan-400/10 transition-colors"
                 style={{ color: l.code === lang ? "#00FFFF" : "rgba(207,255,255,0.7)" }}>
                 <span className="font-bold tracking-wider w-6">{l.flag}</span>

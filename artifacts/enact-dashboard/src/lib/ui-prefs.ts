@@ -9,9 +9,20 @@ import { useEffect, useState, useCallback } from "react";
 
 export type Theme = "dark" | "light";
 export type Lang  = "uk" | "en" | "ru";
+export type Tz    = "auto" | "Europe/Kyiv" | "UTC" | "Europe/London" | "America/New_York" | "Asia/Singapore";
 
 const THEME_KEY = "titan94.theme";
 const LANG_KEY  = "titan94.lang";
+const TZ_KEY    = "titan94.tz";
+
+export const TZ_OPTIONS: { value: Tz; label: string }[] = [
+  { value: "auto",            label: "Auto" },
+  { value: "Europe/Kyiv",     label: "Київ" },
+  { value: "UTC",             label: "UTC" },
+  { value: "Europe/London",   label: "London" },
+  { value: "America/New_York",label: "New York" },
+  { value: "Asia/Singapore",  label: "Singapore" },
+];
 
 function readTheme(): Theme {
   if (typeof window === "undefined") return "dark";
@@ -58,6 +69,48 @@ export function useLang() {
   return { lang, setLang };
 }
 
+function readTz(): Tz {
+  if (typeof window === "undefined") return "auto";
+  const v = localStorage.getItem(TZ_KEY) as Tz | null;
+  if (!v) return "auto";
+  if (TZ_OPTIONS.some(o => o.value === v)) return v;
+  return "auto";
+}
+
+export function useTimezone() {
+  const [tz, setTzState] = useState<Tz>(readTz);
+  const setTz = useCallback((z: Tz) => {
+    localStorage.setItem(TZ_KEY, z);
+    setTzState(z);
+  }, []);
+  return { tz, setTz };
+}
+
+/** Return the resolved IANA timezone (auto → browser default). */
+export function resolveTz(tz: Tz): string {
+  if (tz !== "auto") return tz;
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; }
+  catch { return "UTC"; }
+}
+
+/** Format a date in the user's chosen timezone. */
+export function fmtTime(input: Date | string | number, tz: Tz, opts?: Intl.DateTimeFormatOptions): string {
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "—";
+  const timeZone = resolveTz(tz);
+  return new Intl.DateTimeFormat("uk-UA", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false, timeZone,
+    ...opts,
+  }).format(d);
+}
+
+/** Short HH:mm in chosen tz, used in compact UI badges. */
+export function fmtClock(input: Date | string | number, tz: Tz): string {
+  return fmtTime(input, tz, { year: undefined, month: undefined, day: undefined, second: undefined });
+}
+
 // ── Translation dictionary ─────────────────────────────────
 type Dict = Record<string, Record<Lang, string>>;
 
@@ -93,6 +146,7 @@ const DICT: Dict = {
 
   "btn.theme":     { uk: "Тема",             en: "Theme",          ru: "Тема" },
   "btn.lang":      { uk: "Мова",             en: "Language",       ru: "Язык" },
+  "btn.tz":        { uk: "Часовий пояс",     en: "Timezone",       ru: "Часовой пояс" },
   "btn.menu_open": { uk: "Відкрити меню",    en: "Open menu",      ru: "Открыть меню" },
   "btn.menu_close":{ uk: "Закрити меню",     en: "Close menu",     ru: "Закрыть меню" },
 };
