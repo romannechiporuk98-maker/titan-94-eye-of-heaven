@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
-  Eye, Shield, Search, DollarSign, Brain, Heart, FileCode, Cpu,
+  Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
+  Dna, BarChart3, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +11,12 @@ const NAV_ITEMS = [
   { href: "/threats",   label: "Threats",         icon: Shield,     group: "TITAN-94" },
   { href: "/contracts", label: "Smart Contracts", icon: FileCode,   group: "TITAN-94" },
   { href: "/analyze",   label: "Neural Hub",      icon: Brain,      group: "TITAN-94" },
+  { href: "/evolution", label: "Evolution",       icon: Dna,        group: "TITAN-94" },
   { href: "/immune",    label: "Immune System",   icon: Heart,      group: "TITAN-94" },
+  { href: "/analytics", label: "Analytics",       icon: BarChart3,  group: "TITAN-94" },
   { href: "/status",    label: "Agent Status",    icon: Eye,        group: "TITAN-94" },
   { href: "/earn",      label: "Earnings",        icon: DollarSign, group: "TITAN-94" },
+  { href: "/nexus",     label: "NEXUS AI",        icon: Sparkles,   group: "AGENT" },
   { href: "/enact",     label: "ENACT Overview",  icon: Activity,   group: "ENACT" },
   { href: "/jobs",      label: "Job Explorer",    icon: Briefcase,  group: "ENACT" },
   { href: "/create",    label: "Create Job",      icon: PlusCircle, group: "ENACT" },

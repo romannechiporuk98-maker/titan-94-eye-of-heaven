@@ -15,6 +15,9 @@ import ThreatsPage from "@/pages/threats";
 import AnalyzePage from "@/pages/analyze";
 import ContractsPage from "@/pages/contracts";
 import ImmunePage from "@/pages/immune";
+import EvolutionPage from "@/pages/evolution";
+import AnalyticsPage from "@/pages/analytics";
+import NexusPage from "@/pages/nexus";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -27,6 +30,9 @@ function Router() {
         <Route path="/"               component={CommandCenter} />
         <Route path="/contracts"      component={ContractsPage} />
         <Route path="/immune"         component={ImmunePage}    />
+        <Route path="/evolution"      component={EvolutionPage} />
+        <Route path="/analytics"      component={AnalyticsPage} />
+        <Route path="/nexus"          component={NexusPage}     />
         <Route path="/status"         component={StatusPage}    />
         <Route path="/threats"        component={ThreatsPage}   />
         <Route path="/analyze"        component={AnalyzePage}   />

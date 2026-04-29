@@ -2,3 +2,5 @@ project.zip filter=lfs diff=lfs merge=lfs -text
 attached_assets/project_archive.tar_1777416465014.gz filter=lfs diff=lfs merge=lfs -text
 attached_assets/project_archive.tar_1777445655475.gz filter=lfs diff=lfs merge=lfs -text
 attached_assets/project_archive.tar_1777446056682.gz filter=lfs diff=lfs merge=lfs -text
+New-Project.zip filter=lfs diff=lfs merge=lfs -text
+project_archive.tar.gz filter=lfs diff=lfs merge=lfs -text
