@@ -1,0 +1,36 @@
+{
+  "$schema": "https://core.telegram.org/schemas/tma-manifest.json",
+  "name": "TITAN-94 ОКО НЕБЕСНЕ",
+  "short_name": "TITAN-94",
+  "description": "Sovereign autonomous AI security agent for the TON ecosystem. Real-time vulnerability scanning, AI orchestra (Gemini + Claude + GPT-4o), Auto-Trade, Sniper, Arbitrage, and self-healing immune system. Three modular tiers (SCOUT free / GUARDIAN 5 TON / TITAN 20 TON) — pay in TON or Telegram Stars.",
+  "version": "4.0.0",
+  "language": "uk",
+  "url": "https://titan-94.replit.app/",
+  "start_url": "https://titan-94.replit.app/",
+  "icon": "https://titan-94.replit.app/favicon.svg",
+  "background_color": "#030D18",
+  "theme_color": "#00FFFF",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["productivity", "finance", "developer-tools"],
+  "screenshots": [
+    { "src": "/opengraph.jpg", "type": "image/jpeg", "sizes": "1200x630" }
+  ],
+  "ton_payments": true,
+  "telegram_stars": true,
+  "ton_connect_manifest_url": "https://titan-94.replit.app/tonconnect-manifest.json",
+  "developer": {
+    "name": "Roman / DEI GRATIA",
+    "telegram_id": 7255058720
+  },
+  "permissions": [
+    "telegram-mini-app",
+    "telegram-stars",
+    "ton-connect",
+    "haptic-feedback",
+    "cloud-storage",
+    "biometric-manager",
+    "main-button",
+    "back-button"
+  ]
+}
