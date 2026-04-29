@@ -28,6 +28,7 @@ import AutoTradePage from "@/pages/autotrade";
 import SettingsPage from "@/pages/settings";
 import Protocol94Page from "@/pages/protocol-94";
 import VaultPage from "@/pages/vault";
+import AccessPage from "@/pages/access";
 import { Splash } from "@/components/splash";
 
 const queryClient = new QueryClient({
@@ -55,6 +56,7 @@ function Router() {
         <Route path="/settings"       component={SettingsPage}  />
         <Route path="/protocol-94"    component={Protocol94Page}/>
         <Route path="/vault"          component={VaultPage}     />
+        <Route path="/access"         component={AccessPage}    />
         <Route path="/enact"          component={Home}          />
         <Route path="/jobs"           component={Jobs}          />
         <Route path="/jobs/:address"  component={JobDetail}     />

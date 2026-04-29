@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
-  Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound,
+  Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound, Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/nexus",     label: "NEXUS AI",        icon: Sparkles,   group: "AGENT" },
   { href: "/settings",  label: "API Vault",       icon: Key,        group: "AGENT" },
   { href: "/vault",     label: "Mobile Vault",    icon: KeyRound,   group: "AGENT" },
+  { href: "/access",    label: "Access Tiers",    icon: Crown,      group: "AGENT" },
   { href: "/enact",     label: "ENACT Overview",  icon: Activity,   group: "ENACT" },
   { href: "/jobs",      label: "Job Explorer",    icon: Briefcase,  group: "ENACT" },
   { href: "/create",    label: "Create Job",      icon: PlusCircle, group: "ENACT" },
