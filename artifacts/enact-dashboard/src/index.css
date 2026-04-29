@@ -541,3 +541,40 @@
   to   { transform: translateX(0);     opacity: 1; }
 }
 .animate-slide-in { animation: slideIn 0.18s ease-out; }
+
+/* ── Light theme overrides ── */
+html[data-theme="light"] {
+  --titan-bg:      #F5F8FB;
+  --titan-primary: #0066AA;
+  --titan-amber:   #B86C00;
+  background: #F5F8FB !important;
+  color: #1B2530 !important;
+}
+html[data-theme="light"] body { background: #F5F8FB !important; color: #1B2530 !important; }
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #E5ECF2; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,102,170,0.3); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,102,170,0.55); }
+
+/* Re-tone the cyber-cyan inline-styled surfaces in light mode */
+html[data-theme="light"] [style*="background: #030D18"],
+html[data-theme="light"] [style*="background:#030D18"] { background: #F5F8FB !important; }
+html[data-theme="light"] [style*="background: #060F1A"],
+html[data-theme="light"] [style*="background:#060F1A"] { background: #FFFFFF !important; }
+html[data-theme="light"] [style*="color: #CFFFFF"],
+html[data-theme="light"] [style*="color:#CFFFFF"] { color: #1B2530 !important; }
+html[data-theme="light"] [style*="color: #00FFFF"],
+html[data-theme="light"] [style*="color:#00FFFF"] { color: #0066AA !important; }
+html[data-theme="light"] [style*="color: #00FF88"],
+html[data-theme="light"] [style*="color:#00FF88"] { color: #00884E !important; }
+html[data-theme="light"] [style*="border-color: rgba(0,255,255,0.15)"],
+html[data-theme="light"] [style*="borderColor: \"rgba(0,255,255,0.15)\""] { border-color: rgba(0,102,170,0.18) !important; }
+html[data-theme="light"] [style*="rgba(0,255,255,0.4)"]  { color: rgba(0,102,170,0.65) !important; }
+html[data-theme="light"] [style*="rgba(207,255,255,0.6)"] { color: rgba(27,37,48,0.78) !important; }
+html[data-theme="light"] [style*="rgba(207,255,255,0.5)"] { color: rgba(27,37,48,0.65) !important; }
+html[data-theme="light"] [style*="rgba(207,255,255,0.4)"] { color: rgba(27,37,48,0.55) !important; }
+html[data-theme="light"] [style*="rgba(207,255,255,0.25)"]{ color: rgba(27,37,48,0.4)  !important; }
+
+/* Disable the dark scanlines overlay in light mode */
+html[data-theme="light"] [style*="repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03)"] {
+  display: none !important;
+}
