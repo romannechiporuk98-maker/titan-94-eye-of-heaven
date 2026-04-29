@@ -5,18 +5,24 @@
     "strategy": "arbitrage",
     "risk": "medium",
     "depositTon": 2,
-    "currentTon": 2.00008796067833,
-    "pnlTon": 0.00008796067832994581,
-    "pnlPct": 0.00439803391649729,
-    "trades": 49,
+    "currentTon": 2.000069850871811,
+    "pnlTon": 0.00006985087181110572,
+    "pnlPct": 0.003492543590555286,
+    "trades": 50,
     "wins": 26,
-    "losses": 23,
-    "consecutiveLosses": 0,
+    "losses": 24,
+    "consecutiveLosses": 1,
     "paused": false,
     "pausedReason": null,
     "selfHealCount": 0,
-    "lastTradeAt": "2026-04-29T23:51:16.496Z",
+    "lastTradeAt": "2026-04-29T23:54:20.514Z",
     "history": [
+      {
+        "ts": "2026-04-29T23:54:20.514Z",
+        "action": "ARBITRAGE LOSS @ $1.3217",
+        "pnl": -0.00001810980651879506,
+        "price": 1.3217356528694262
+      },
       {
         "ts": "2026-04-29T23:51:16.496Z",
         "action": "ARBITRAGE WIN @ $1.3210",
@@ -313,6 +319,6 @@
       }
     ],
     "createdAt": "2026-04-29T13:34:52.798Z",
-    "updatedAt": "2026-04-29T23:51:16.496Z"
+    "updatedAt": "2026-04-29T23:54:20.514Z"
   }
 ]

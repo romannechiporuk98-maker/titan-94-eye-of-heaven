@@ -1,12 +1,13 @@
 /**
- * TITAN-94 — Responsive Layout with theme + language switchers.
+ * TITAN-94 — Responsive Layout with timezone + language switchers.
  *
  * - Desktop (>= md): static left sidebar + main content
  * - Mobile (< md):   compact top bar + slide-out drawer (hamburger)
- * - Theme: dark (default) / light, toggled via Sun-Moon button (top-right)
+ * - Cyberpunk theme is dark-only by design (no light mode toggle)
  * - Language: uk (default) / en / ru, toggled via globe button (top-right)
+ * - Timezone: auto/Київ/UTC/London/NY/Singapore with live clock
  *
- * Both prefs persist in localStorage via lib/ui-prefs.ts.
+ * Prefs persist in localStorage via lib/ui-prefs.ts.
  */
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
@@ -14,10 +15,10 @@ import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
   Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound, Crown,
-  Menu, X, Sun, Moon, Languages, Clock,
+  Menu, X, Languages, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme, useLang, useTimezone, fmtClock, resolveTz, TZ_OPTIONS, t, type Lang } from "@/lib/ui-prefs";
+import { useLang, useTimezone, fmtClock, resolveTz, TZ_OPTIONS, t, type Lang } from "@/lib/ui-prefs";
 
 type NavItem = { href: string; tkey: string; icon: typeof Cpu; group: "titan" | "agent" | "enact" };
 
@@ -48,7 +49,6 @@ const GROUPS = ["titan", "agent", "enact"] as const;
 
 /* ── Top-right control cluster: Theme + Language ─────────────────────── */
 function PrefsCluster({ compact = false }: { compact?: boolean }) {
-  const { theme, toggle } = useTheme();
   const { lang, setLang } = useLang();
   const { tz, setTz } = useTimezone();
   const [openLang, setOpenLang] = useState(false);
@@ -101,19 +101,6 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
         <Clock className="w-3 h-3 opacity-60" />
         <span>{fmtClock(now, tz)}</span>
       </div>
-
-      {/* Theme toggle */}
-      <button onClick={toggle}
-        className={`${btnSize} rounded border transition-colors`}
-        style={{
-          borderColor: "rgba(0,255,255,0.3)",
-          color: "var(--titan-primary, #00FFFF)",
-          background: "transparent",
-        }}
-        aria-label={t("btn.theme", lang)}
-        title={t("btn.theme", lang)}>
-        {theme === "dark" ? <Sun className={iconSize} /> : <Moon className={iconSize} />}
-      </button>
 
       {/* Timezone picker */}
       <div className="relative">
