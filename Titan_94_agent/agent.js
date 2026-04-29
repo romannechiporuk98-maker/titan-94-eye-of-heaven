@@ -20,7 +20,7 @@ const http = require("http");
 // ═══════════════════════════════════════════════════════════════════════
 const CONFIG = {
     telegram: {
-        botToken: process.env.TELEGRAM_BOT_TOKEN || "",
+        botToken: process.env.TELEGRAM_BOT_TOKEN_2 || process.env.TELEGRAM_BOT_TOKEN_STANDALONE || "",
         adminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID || "",
         reportChannelId: process.env.TELEGRAM_REPORT_CHANNEL || "",
     },
