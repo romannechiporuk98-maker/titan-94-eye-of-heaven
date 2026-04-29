@@ -17,7 +17,10 @@ export function Splash() {
     // Skip splash on admin pages — creator works there often
     const path = window.location.pathname;
     if (/(settings|protocol-94|vault|access|creator|developer|builder)/i.test(path)) return;
-    const force = new URLSearchParams(window.location.search).has("splash");
+    const qs   = new URLSearchParams(window.location.search);
+    // ?splash=0 explicitly disables splash for testing/screenshots
+    if (qs.get("splash") === "0") return;
+    const force = qs.has("splash") && qs.get("splash") !== "0";
     const seen  = window.localStorage.getItem(STORAGE_KEY);
     if (force || !seen) {
       setVisible(true);

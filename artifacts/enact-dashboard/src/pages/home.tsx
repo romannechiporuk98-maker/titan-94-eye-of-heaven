@@ -69,7 +69,14 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="rounded-md border border-border bg-card">
+        <div
+          className="rounded-md border overflow-hidden"
+          style={{
+            background: "linear-gradient(180deg, rgba(6,15,26,0.85) 0%, rgba(3,13,24,0.92) 100%)",
+            borderColor: "rgba(0,255,255,0.18)",
+            fontFamily: "'Space Mono', monospace",
+          }}
+        >
           {jobsLoading ? (
             <div className="p-8 space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -78,38 +85,65 @@ export default function Home() {
             </div>
           ) : jobsData?.jobs && jobsData.jobs.length > 0 ? (
             <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead className="[&_tr]:border-b">
-                  <tr className="border-b border-border transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">State</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Budget</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Created</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-right">Action</th>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(0,255,255,0.18)" }}>
+                    {["ID", "State", "Type", "Budget", "Created", ""].map((h, i) => (
+                      <th
+                        key={h + i}
+                        className={`h-10 px-4 text-left align-middle text-[10px] font-bold tracking-widest uppercase ${
+                          i === 5 ? "text-right" : ""
+                        }`}
+                        style={{ color: "rgba(0,255,255,0.55)" }}
+                      >
+                        {h || "Action"}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="[&_tr:last-child]:border-0">
-                  {jobsData.jobs.map((job) => (
-                    <tr key={job.address} className="border-b border-border transition-colors hover:bg-muted/50">
-                      <td className="p-4 align-middle font-mono">#{job.jobId}</td>
-                      <td className="p-4 align-middle">
+                <tbody>
+                  {jobsData.jobs.map((job, idx) => (
+                    <tr
+                      key={job.address}
+                      className="transition-colors hover:bg-cyan-400/[0.04]"
+                      style={{
+                        borderTop: idx === 0 ? "none" : "1px solid rgba(0,255,255,0.08)",
+                      }}
+                    >
+                      <td className="p-3 align-middle text-xs tabular-nums" style={{ color: "rgba(0,255,255,0.7)" }}>
+                        #{job.jobId}
+                      </td>
+                      <td className="p-3 align-middle">
                         <JobStateBadge state={job.state} />
                       </td>
-                      <td className="p-4 align-middle">
-                        <span className="text-xs font-mono bg-secondary px-2 py-1 rounded">
+                      <td className="p-3 align-middle">
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded tracking-wider"
+                          style={{
+                            background: job.type === "TON" ? "rgba(0,255,255,0.1)" : "rgba(0,255,136,0.1)",
+                            color: job.type === "TON" ? "#00FFFF" : "#00FF88",
+                            border: `1px solid ${job.type === "TON" ? "rgba(0,255,255,0.25)" : "rgba(0,255,136,0.25)"}`,
+                          }}
+                        >
                           {job.type}
                         </span>
                       </td>
-                      <td className="p-4 align-middle font-mono">
-                        {job.type === 'TON' ? job.budgetTon : job.budgetUsdt}
+                      <td className="p-3 align-middle text-xs tabular-nums font-bold" style={{ color: "#CFFFFF" }}>
+                        {job.type === "TON" ? job.budgetTon : job.budgetUsdt}
                       </td>
-                      <td className="p-4 align-middle text-muted-foreground">
+                      <td className="p-3 align-middle text-[11px] tabular-nums" style={{ color: "rgba(207,255,255,0.55)" }}>
                         {new Date(job.createdAt * 1000).toLocaleString()}
                       </td>
-                      <td className="p-4 align-middle text-right">
-                        <Link href={`/jobs/${job.address}`} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 px-3">
-                          View
+                      <td className="p-3 align-middle text-right">
+                        <Link
+                          href={`/jobs/${job.address}`}
+                          className="inline-flex items-center justify-center rounded text-[11px] font-bold tracking-wider px-3 h-7 transition-all hover:bg-cyan-400/10"
+                          style={{
+                            color: "#00FFFF",
+                            border: "1px solid rgba(0,255,255,0.3)",
+                          }}
+                        >
+                          VIEW →
                         </Link>
                       </td>
                     </tr>
@@ -118,7 +152,7 @@ export default function Home() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-muted-foreground">
+            <div className="p-8 text-center text-xs tracking-wider" style={{ color: "rgba(207,255,255,0.4)" }}>
               No jobs found.
             </div>
           )}
