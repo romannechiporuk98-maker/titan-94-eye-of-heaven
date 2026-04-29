@@ -13,6 +13,7 @@
     "intervalMin": 5,
     "enabled": true,
     "memory": [
+      "[2026-04-29T14:29:35.193Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 14 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-04-29T14:23:35.189Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 14 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-04-29T14:16:51.229Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 12 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-04-29T14:11:51.201Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 12 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
@@ -26,13 +27,13 @@
       "[2026-04-29T13:26:21.598Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 6 critical, 9 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-04-29T13:20:21.596Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 6 critical, 9 high, 2 active\n  ✓ telegram-notify: notified creator\n✓ done"
     ],
-    "runs": 12,
-    "successes": 12,
+    "runs": 13,
+    "successes": 13,
     "failures": 0,
-    "lastRunAt": "2026-04-29T14:23:35.199Z",
-    "nextRunAt": "2026-04-29T14:28:35.199Z",
-    "lastOutput": "[2026-04-29T14:23:35.189Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 14 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
+    "lastRunAt": "2026-04-29T14:29:35.204Z",
+    "nextRunAt": "2026-04-29T14:34:35.204Z",
+    "lastOutput": "[2026-04-29T14:29:35.193Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 8 critical, 14 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
     "createdAt": "2026-04-29T13:18:36.888Z",
-    "updatedAt": "2026-04-29T14:23:35.199Z"
+    "updatedAt": "2026-04-29T14:29:35.204Z"
   }
 ]
