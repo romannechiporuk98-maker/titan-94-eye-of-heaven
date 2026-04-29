@@ -8,17 +8,38 @@
 import { Bot, InlineKeyboard, type Context } from "grammy";
 import { logger } from "../lib/logger";
 import * as store from "./store";
+import { get as getSecret } from "./secrets";
 
-const TOKEN     = process.env["TELEGRAM_BOT_TOKEN"]      || "";
 const ADMIN_ID  = process.env["TELEGRAM_ADMIN_CHAT_ID"]  || "7255058720";
 const APP_URL   = process.env["PUBLIC_APP_URL"]          || ""; // e.g. https://titan-94.replit.app
 const RESERVE   = "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v";
+let TOKEN       = process.env["TELEGRAM_BOT_TOKEN"]      || "";
 
 let bot: Bot | null = null;
 let started = false;
 
 export function isBotEnabled(): boolean { return !!TOKEN; }
 export function getBot(): Bot | null { return bot; }
+
+/** Re-init bot after secret change (called by /api/secrets/set). */
+export async function reloadTelegramBot(): Promise<{ ok: boolean; reason?: string }> {
+  const fresh = await getSecret("TELEGRAM_BOT_TOKEN");
+  if (!fresh) return { ok: false, reason: "no token" };
+  if (started && bot && fresh === TOKEN) return { ok: true, reason: "unchanged" };
+  try {
+    if (bot) { try { await bot.stop(); } catch {} }
+    TOKEN = fresh;
+    started = false;
+    bot = null;
+    const newBot = initTelegramBot();
+    if (!newBot) return { ok: false, reason: "init failed" };
+    await startTelegramBot();
+    return { ok: true };
+  } catch (e: any) {
+    logger.error({ err: e.message }, "[TG-BOT] reload failed");
+    return { ok: false, reason: e.message };
+  }
+}
 
 function fmtUser(ctx: Context): { id: string; name: string } {
   const u = ctx.from;

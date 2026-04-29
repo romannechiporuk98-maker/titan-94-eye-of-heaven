@@ -4,16 +4,19 @@
  */
 import https from "https";
 import { logger } from "../lib/logger";
+import { getSync as getSecretSync } from "./secrets";
 
 const HOST = "toncenter.com";
 const KEY  = process.env.TON_API_KEY || "";
+const currentKey = () => getSecretSync("TON_API_KEY") || KEY;
 
 interface RpcResponse<T = any> { ok: boolean; result?: T; error?: string }
 
 function rpc<T = any>(path: string): Promise<RpcResponse<T>> {
   return new Promise((resolve) => {
     const sep = path.includes("?") ? "&" : "?";
-    const url = `/api/v2${path}${KEY ? `${sep}api_key=${KEY}` : ""}`;
+    const k = currentKey();
+    const url = `/api/v2${path}${k ? `${sep}api_key=${k}` : ""}`;
     const req = https.request({
       hostname: HOST, path: url, method: "GET",
       headers: { "Accept": "application/json" },
@@ -95,3 +98,4 @@ export async function getCurrentSeqno(): Promise<number | null> {
 }
 
 export const TON_API_HEALTHY = !!KEY;
+export const isTonApiHealthy = () => !!currentKey();

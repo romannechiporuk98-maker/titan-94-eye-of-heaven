@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
 import https from "https";
-
-const GEMINI_KEY = process.env["GEMINI_API_KEY"] || "";
+import { runOrchestra } from "../services/ai-orchestra";
+import { get as getSecret } from "../services/secrets";
 
 async function gemini(prompt: string, system?: string): Promise<string | null> {
-  if (!GEMINI_KEY) return null;
+  const key = await getSecret("GEMINI_API_KEY");
+  if (!key) return null;
   const body = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: (system ? system + "\n\n" : "") + prompt }] }],
     generationConfig: { temperature: 0.85, maxOutputTokens: 2048 },
@@ -12,7 +13,7 @@ async function gemini(prompt: string, system?: string): Promise<string | null> {
   return new Promise((resolve) => {
     const req = https.request({
       hostname: "generativelanguage.googleapis.com",
-      path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
       method: "POST",
       headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
     }, (res) => {
@@ -45,13 +46,30 @@ const SYSTEMS: Record<string, string> = {
 
 const router: IRouter = Router();
 
-router.get("/nexus/status", (_req, res) => {
+router.get("/nexus/status", async (_req, res) => {
+  const [gemini, openai, claude, openrouter] = await Promise.all([
+    getSecret("GEMINI_API_KEY"), getSecret("OPENAI_API_KEY"),
+    getSecret("ANTHROPIC_API_KEY"), getSecret("OPENROUTER_API_KEY"),
+  ]);
+  const active = [
+    !!gemini && "Gemini", !!openai && "GPT-4o", !!claude && "Claude", !!openrouter && "Llama-OR",
+  ].filter(Boolean) as string[];
   res.json({
     online: true,
     model: "gemini-2.0-flash",
-    keyConfigured: !!GEMINI_KEY,
+    keyConfigured: !!gemini,
+    orchestraEnabled: active.length >= 2,
+    activeModels: active,
     modes: Object.keys(SYSTEMS),
   });
+});
+
+router.post("/nexus/orchestra", async (req, res) => {
+  const { prompt, mode = "general" } = (req.body || {}) as { prompt?: string; mode?: string };
+  if (!prompt || !prompt.trim()) return res.status(400).json({ error: "prompt required" });
+  const system = SYSTEMS[mode] || SYSTEMS["general"];
+  const result = await runOrchestra({ prompt, system });
+  res.json(result);
 });
 
 router.post("/nexus/generate", async (req, res) => {

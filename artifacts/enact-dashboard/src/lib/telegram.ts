@@ -52,6 +52,18 @@ let cached: TgUser | null = null;
 
 export function initTelegram(): TgUser {
   if (cached) return cached;
+  // Dev override: ?_dev_tg=<id> lets a browser session impersonate a TG user
+  // (only useful outside Telegram WebApp — production users come from initDataUnsafe).
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dev = params.get("_dev_tg");
+      if (dev) {
+        cached = { id: dev, name: dev === "7255058720" ? "Roman (Creator)" : `Dev ${dev}`, isReal: false };
+        return cached;
+      }
+    } catch {}
+  }
   const wa = typeof window !== "undefined" ? window.Telegram?.WebApp : undefined;
   if (!wa) { cached = DEMO; return DEMO; }
   try {

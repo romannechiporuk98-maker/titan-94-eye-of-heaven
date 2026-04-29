@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
-  Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp,
+  Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/builder",   label: "Agent Forge",     icon: Bot,        group: "AGENT" },
   { href: "/developer", label: "Developer Mode",  icon: Code2,      group: "AGENT" },
   { href: "/nexus",     label: "NEXUS AI",        icon: Sparkles,   group: "AGENT" },
+  { href: "/settings",  label: "API Vault",       icon: Key,        group: "AGENT" },
   { href: "/enact",     label: "ENACT Overview",  icon: Activity,   group: "ENACT" },
   { href: "/jobs",      label: "Job Explorer",    icon: Briefcase,  group: "ENACT" },
   { href: "/create",    label: "Create Job",      icon: PlusCircle, group: "ENACT" },

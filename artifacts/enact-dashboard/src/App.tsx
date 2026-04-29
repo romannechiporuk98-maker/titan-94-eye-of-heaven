@@ -25,6 +25,7 @@ import CreatorPage from "@/pages/creator";
 import DeveloperPage from "@/pages/developer";
 import BuilderPage from "@/pages/builder";
 import AutoTradePage from "@/pages/autotrade";
+import SettingsPage from "@/pages/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -48,6 +49,7 @@ function Router() {
         <Route path="/creator"        component={CreatorPage}   />
         <Route path="/builder"        component={BuilderPage}   />
         <Route path="/autotrade"      component={AutoTradePage} />
+        <Route path="/settings"       component={SettingsPage}  />
         <Route path="/enact"          component={Home}          />
         <Route path="/jobs"           component={Jobs}          />
         <Route path="/jobs/:address"  component={JobDetail}     />

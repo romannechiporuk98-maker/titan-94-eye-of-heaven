@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startHeartbeat } from "./services/heartbeat";
+import { ensureLoaded as loadSecrets } from "./services/secrets";
 
 const rawPort = process.env["PORT"];
 
@@ -23,5 +24,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "TITAN-94 API Server listening");
-  startHeartbeat();
+  loadSecrets()
+    .then(() => startHeartbeat())
+    .catch((e) => { logger.error({ err: e }, "secrets load failed"); startHeartbeat(); });
 });

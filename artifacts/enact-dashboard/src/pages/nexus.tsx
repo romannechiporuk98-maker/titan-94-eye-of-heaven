@@ -1,177 +1,245 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, Send } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  Sparkles, Send, Brain, CheckCircle2, AlertTriangle, Zap, Loader2,
+  Users, Trophy, MessageSquare, Activity,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (p: string) => `${BASE}/api${p}`;
 
-const CAPABILITIES = [
-  { id: "website",  icon: "🌐", label: "Сайт",        color: "#00FFFF" },
-  { id: "code",     icon: "💻", label: "Код",         color: "#7fff00" },
-  { id: "image",    icon: "🎨", label: "Зображення",  color: "#ff6bff" },
-  { id: "video",    icon: "🎬", label: "Відео",       color: "#ff9f43" },
-  { id: "film",     icon: "🎥", label: "Фільм",       color: "#ff4757" },
-  { id: "bot",      icon: "🤖", label: "Telegram",    color: "#1dd1a1" },
-  { id: "music",    icon: "🎵", label: "Музика",      color: "#feca57" },
-  { id: "text",     icon: "✍️", label: "Текст",       color: "#a29bfe" },
+const MODES = [
+  { id: "general",  icon: "✨", label: "Загальний" },
+  { id: "website",  icon: "🌐", label: "Сайт"      },
+  { id: "code",     icon: "💻", label: "Код"       },
+  { id: "image",    icon: "🎨", label: "Зображення"},
+  { id: "video",    icon: "🎬", label: "Відео"     },
+  { id: "bot",      icon: "🤖", label: "Telegram"  },
+  { id: "music",    icon: "🎵", label: "Музика"    },
+  { id: "text",     icon: "✍",  label: "Текст"     },
 ];
 
-type Msg = { role: "user" | "assistant"; content: string };
-
-function renderMd(text: string) {
-  return text
-    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre class="nx-code"><span class="nx-lang">${lang || "code"}</span><code>${code.replace(/</g, "&lt;")}</code></pre>`)
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/^#{1,3}\s(.+)$/gm, "<h3>$1</h3>")
-    .replace(/\n/g, "<br/>");
-}
+const MODEL_COLORS: Record<string, string> = {
+  Claude: "#FF8C00", "Claude 3.5 Sonnet": "#FF8C00",
+  "GPT-4o-mini": "#00FFFF", "GPT-4o": "#00FFFF",
+  "Gemini 2.0 Flash": "#9B5CFF", Gemini: "#9B5CFF",
+  "Llama-3.3-70B (OR)": "#00FF88", "Llama-OR": "#00FF88",
+};
 
 export default function NexusPage() {
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [mode, setMode]         = useState<string | null>(null);
-  const [keyOk, setKeyOk]       = useState<boolean | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const [prompt, setPrompt] = useState("");
+  const [mode, setMode] = useState("general");
+  const [result, setResult] = useState<any>(null);
 
-  useEffect(() => {
-    fetch(api("/nexus/status")).then(r => r.json()).then((s) => setKeyOk(!!s.keyConfigured));
-    setMessages([{
-      role: "assistant",
-      content: `🚀 **NEXUS — мультимедійний AI-агент TITAN-94**\n\nЯ можу:\n\n🌐 Сайти · 💻 Код · 🎨 Зображення · 🎬 Відео · 🎥 Фільми\n🤖 Telegram боти · 🎵 Музика · ✍️ Тексти\n\nОбери режим або просто запитай українською.`,
-    }]);
-  }, []);
+  const { data: status } = useQuery<any>({
+    queryKey: ["/nexus/status"],
+    queryFn: () => fetch(api("/nexus/status")).then(r => r.json()),
+    refetchInterval: 30000,
+  });
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  const orchestra = useMutation({
+    mutationFn: (b: { prompt: string; mode: string }) =>
+      fetch(api("/nexus/orchestra"), {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(b),
+      }).then(r => r.json()),
+    onSuccess: (d) => setResult(d),
+    onError: (e: any) => toast({ title: "× " + e.message, variant: "destructive" }),
+  });
 
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading) return;
-    setInput("");
-    const userMsg: Msg = { role: "user", content: text };
-    setMessages(prev => [...prev, userMsg]);
-    setLoading(true);
-    try {
-      const res = await fetch(api("/nexus/generate"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text, mode: mode || "general" }),
-      });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply || "⚠️ Порожня відповідь" }]);
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Помилка з'єднання з NEXUS" }]);
-    }
-    setLoading(false);
-  }, [input, loading, mode]);
+  const send = () => {
+    if (!prompt.trim() || orchestra.isPending) return;
+    orchestra.mutate({ prompt: prompt.trim(), mode });
+  };
+
+  const active = status?.activeModels || [];
+  const orchestraOn = !!status?.orchestraEnabled;
 
   return (
-    <div className="titan-page flex flex-col h-full">
-      <style>{`
-        .nx-code { background: #050a14; border: 1px solid rgba(0,255,255,0.2); border-radius: 6px; padding: 10px; overflow-x: auto; font-size: 11px; position: relative; margin: 6px 0; white-space: pre-wrap; }
-        .nx-lang { position: absolute; top: 4px; right: 8px; font-size: 9px; color: #00FFFF; opacity: 0.6; }
-        .nx-msg code { font-family: 'Space Mono', monospace; color: #7fff00; }
-        .nx-msg h3 { color: #00FFFF; margin: 4px 0; font-size: 12px; }
-        .nx-msg strong { color: #ffffff; }
-      `}</style>
-
-      <div className="titan-page-header flex justify-between items-center">
-        <div>
-          <h1 className="titan-title">◈ NEXUS — AI MULTIMEDIA AGENT</h1>
-          <p className="titan-subtitle">
-            Gemini 2.0 Flash · {keyOk === null ? "perевірка..." : keyOk ? "● ONLINE" : "⚠ fallback (no key)"}
-          </p>
+    <div className="titan-page titan-grid-bg">
+      {/* HERO */}
+      <div className="relative overflow-hidden p-5 mb-5 rounded-lg" style={{
+        background: "linear-gradient(135deg, rgba(155,92,255,0.10), rgba(0,255,255,0.06), rgba(255,140,0,0.08))",
+        border: "1px solid rgba(155,92,255,0.3)",
+      }}>
+        <div className="absolute top-0 right-0 opacity-10"><Brain className="w-48 h-48 text-purple-400" /></div>
+        <div className="relative flex justify-between items-start gap-4">
+          <div>
+            <div className="text-[10px] tracking-[0.4em] text-purple-300/70 mb-1">MODULE 08 · MULTI-MODEL CONSENSUS ENGINE</div>
+            <h1 className="text-3xl font-bold" style={{
+              background: "linear-gradient(90deg, #9B5CFF, #00FFFF, #FF8C00)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>◈ NEXUS · AI ORCHESTRA</h1>
+            <p className="text-xs text-muted mt-1">4 моделі питаються одночасно · агрегація через consensus-judge · показ дисидентських думок</p>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-muted tracking-widest">ACTIVE</div>
+            <div className={`text-2xl font-bold ${orchestraOn ? "text-safe" : active.length === 1 ? "text-amber" : "text-red-400"}`}>{active.length}/4</div>
+            <div className="text-[10px] text-muted">{orchestraOn ? "ORCHESTRA" : active.length === 1 ? "SOLO MODE" : "OFFLINE"}</div>
+          </div>
         </div>
-        <Sparkles className="w-6 h-6 text-amber" />
-      </div>
 
-      {/* Capability pills */}
-      <div className="titan-card mb-4">
-        <div className="flex flex-wrap gap-2">
-          {CAPABILITIES.map((c) => {
-            const active = mode === c.id;
+        {/* Active models pills */}
+        <div className="relative flex flex-wrap gap-1.5 mt-3">
+          {["Gemini", "GPT-4o", "Claude", "Llama-OR"].map((m) => {
+            const on = active.includes(m);
+            const col = MODEL_COLORS[m] || "#6b7280";
             return (
-              <button
-                key={c.id}
-                onClick={() => setMode(active ? null : c.id)}
-                className="text-xs px-3 py-1.5 rounded-full transition-all border"
+              <span key={m} className="text-[10px] px-2 py-1 border font-mono"
                 style={{
-                  background: active ? c.color : "rgba(255,255,255,0.04)",
-                  borderColor: active ? c.color : "rgba(255,255,255,0.12)",
-                  color: active ? "#000" : "#cfffff",
-                  fontWeight: active ? 700 : 400,
-                  boxShadow: active ? `0 0 12px ${c.color}88` : "none",
-                }}
-              >{c.icon} {c.label}</button>
+                  borderColor: on ? col : "rgba(255,255,255,0.1)",
+                  background: on ? col + "15" : "rgba(0,0,0,0.3)",
+                  color: on ? col : "#6b7280",
+                }}>
+                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${on ? "" : "opacity-30"}`} style={{ background: col }}></span>
+                {m}{on ? " · ONLINE" : " · NO KEY"}
+              </span>
             );
           })}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="titan-card flex-1 overflow-y-auto mb-4 min-h-0">
-        <div className="space-y-3">
-          {messages.map((m, i) => {
-            const isUser = m.role === "user";
-            return (
-              <div key={i} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-                {!isUser && (
-                  <div className="w-7 h-7 rounded-full mr-2 mt-1 flex items-center justify-center text-xs flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,#00FFFF,#00FF88)" }}>⚡</div>
-                )}
-                <div
-                  className="nx-msg max-w-[82%] px-3 py-2 text-xs leading-relaxed"
-                  style={{
-                    background: isUser ? "linear-gradient(135deg,#1e3a5f,#0d2137)" : "rgba(0,255,255,0.04)",
-                    border: `1px solid ${isUser ? "rgba(0,255,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: isUser ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                    color: "#e8e8e8",
-                    fontFamily: "'Space Mono', monospace",
-                    wordBreak: "break-word",
-                  }}
-                  dangerouslySetInnerHTML={{ __html: isUser ? m.content : renderMd(m.content) }}
-                />
+      {/* INPUT */}
+      <div className="titan-live-card p-4 mb-5">
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {MODES.map((m) => (
+            <button key={m.id} type="button" onClick={() => setMode(m.id)}
+              className="text-xs px-3 py-1.5 border transition"
+              style={{
+                borderColor: mode === m.id ? "#00FFFF" : "rgba(0,255,255,0.15)",
+                background: mode === m.id ? "rgba(0,255,255,0.1)" : "transparent",
+                color: mode === m.id ? "#00FFFF" : "#9ca3af",
+              }}>
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <textarea
+            className="titan-input flex-1 text-sm resize-none"
+            rows={3}
+            placeholder={
+              orchestraOn
+                ? "Запит → 4 моделі обговорять і повернуть консенсус..."
+                : active.length === 0
+                  ? "Додай хоча б один AI-ключ у Settings (Gemini найшвидше)..."
+                  : "Запит → solo-режим..."
+            }
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send(); }}
+          />
+          <button type="button" onClick={send} disabled={orchestra.isPending || !prompt.trim()}
+                  className="titan-btn titan-btn-amber px-4">
+            {orchestra.isPending
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <><Zap className="w-4 h-4 mr-1" /> ASK ORCHESTRA</>}
+          </button>
+        </div>
+        <div className="text-[10px] text-muted mt-1">⌘/Ctrl + Enter — швидка відправка</div>
+      </div>
+
+      {/* RESULT */}
+      {orchestra.isPending && (
+        <div className="titan-live-card p-8 text-center mb-5">
+          <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary mb-2" />
+          <div className="text-sm text-muted">Опитую {active.length} моделей паралельно...</div>
+          <div className="text-[10px] text-muted mt-1">consensus scoring · jaccard tokenization · weighted judge</div>
+        </div>
+      )}
+
+      {result && !orchestra.isPending && (
+        <div className="space-y-4 mb-5">
+          {/* CONSENSUS */}
+          <div className="titan-live-card p-4" style={{ borderColor: "rgba(0,255,136,0.4)" }}>
+            <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-safe" />
+                <span className="font-bold text-safe">CONSENSUS</span>
+                <span className="text-[10px] text-muted">judge: <span className="text-amber">{result.judge}</span></span>
               </div>
-            );
-          })}
-          {loading && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs"
-                style={{ background: "linear-gradient(135deg,#00FFFF,#00FF88)" }}>⚡</div>
-              <div className="px-3 py-2 text-xs" style={{ background: "rgba(0,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px 12px 12px 2px" }}>
-                <span className="titan-pulse mr-1" />
-                <span className="titan-pulse mr-1" style={{ animationDelay: "0.2s" }} />
-                <span className="titan-pulse" style={{ animationDelay: "0.4s" }} />
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted">AGREEMENT</span>
+                <div className="w-24 h-1.5 bg-black/40 overflow-hidden">
+                  <div className="h-full" style={{
+                    width: `${result.agreementScore}%`,
+                    background: result.agreementScore > 70 ? "#00FF88" : result.agreementScore > 40 ? "#FF8C00" : "#FF3355",
+                  }} />
+                </div>
+                <span className="text-xs font-bold" style={{
+                  color: result.agreementScore > 70 ? "#00FF88" : result.agreementScore > 40 ? "#FF8C00" : "#FF3355",
+                }}>{result.agreementScore}%</span>
+              </div>
+            </div>
+            <div className="text-sm whitespace-pre-wrap leading-relaxed">{result.consensus}</div>
+          </div>
+
+          {/* DISSENT */}
+          {result.dissent?.length > 0 && (
+            <div className="titan-live-card p-4" style={{ borderColor: "rgba(255,140,0,0.3)" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-amber" />
+                <span className="font-bold text-amber text-sm">ДИСИДЕНТСЬКІ ДУМКИ ({result.dissent.length})</span>
+              </div>
+              <div className="space-y-2">
+                {result.dissent.map((d: any, i: number) => (
+                  <div key={i} className="text-xs p-2 border-l-2 bg-amber/5" style={{ borderColor: "#FF8C00" }}>
+                    <div className="text-amber text-[10px] mb-1">{d.model}</div>
+                    <div className="text-muted">{d.point}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-          <div ref={bottomRef} />
-        </div>
-      </div>
 
-      {/* Input */}
-      <div className="flex gap-2">
-        <textarea
-          className="titan-input flex-1 resize-none"
-          rows={2}
-          placeholder={mode ? `[${mode}] напиши що згенерувати...` : "Запитай NEXUS..."}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
-          }}
-        />
-        <button
-          className="titan-btn shrink-0 flex items-center gap-1"
-          onClick={send}
-          disabled={!input.trim() || loading}
-        >
-          <Send className="w-4 h-4" /> SEND
-        </button>
-      </div>
+          {/* PER-MODEL BREAKDOWN */}
+          <div className="titan-live-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-primary" />
+              <span className="font-bold text-primary text-sm">МОДЕЛІ ({result.models.length})</span>
+            </div>
+            <div className="grid gap-2">
+              {result.models.map((m: any) => {
+                const col = MODEL_COLORS[m.name] || "#6b7280";
+                return (
+                  <details key={m.id} className="border" style={{ borderColor: col + "30", background: col + "05" }}>
+                    <summary className="cursor-pointer p-2 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {m.status === "ok"   && <CheckCircle2 className="w-3 h-3 text-safe shrink-0" />}
+                        {m.status === "error" && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
+                        {m.status === "skip"  && <Activity      className="w-3 h-3 text-muted shrink-0" />}
+                        <span className="font-bold" style={{ color: col }}>{m.name}</span>
+                        {m.status === "ok" && <span className="text-[9px] text-muted">{m.latencyMs}ms · agreement {(m.agreement * 100).toFixed(0)}%</span>}
+                        {m.status === "error" && <span className="text-[9px] text-red-400">{m.error}</span>}
+                        {m.status === "skip" && <span className="text-[9px] text-muted">no API key</span>}
+                      </div>
+                    </summary>
+                    {m.text && (
+                      <div className="p-2 pt-0 text-xs whitespace-pre-wrap text-muted border-t" style={{ borderColor: col + "20" }}>
+                        {m.text}
+                      </div>
+                    )}
+                  </details>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!result && !orchestra.isPending && (
+        <div className="titan-card text-center py-10 mb-5">
+          <Sparkles className="w-10 h-10 text-purple-400 mx-auto mb-2 opacity-50" />
+          <p className="text-sm text-muted">Постав запит вище — Orchestra опитає всі {active.length || 4} моделей паралельно і зведе відповіді в один консенсус.</p>
+          {active.length === 0 && (
+            <a href="./settings" className="inline-block mt-3 titan-btn titan-btn-amber">
+              <MessageSquare className="w-4 h-4 mr-1 inline" /> Додати API ключі
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
