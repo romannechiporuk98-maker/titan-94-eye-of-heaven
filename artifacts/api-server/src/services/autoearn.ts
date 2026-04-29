@@ -12,20 +12,25 @@
  */
 import { logger } from "../lib/logger";
 import * as store from "./store";
-
-const ELITE_PER_CYCLE = 0.0010;
-const PRO_PER_CYCLE   = 0.0003;
+import { getSettings } from "./creator";
 
 export async function runAutoEarn() {
+  const settings = await getSettings();
+  if (!settings.autoEarnEnabled) {
+    logger.debug("[AUTO-EARN] disabled by creator settings");
+    return { elite: 0, pro: 0, developer: 0, distributed: 0, skipped: true };
+  }
+
   const subs = await store.listSubscribers();
   const now  = Date.now();
   const active = subs.filter((s) => s.isActive && (!s.expiresAt || s.expiresAt.getTime() > now));
 
-  let elite = 0, pro = 0, distributed = 0;
+  let elite = 0, pro = 0, developer = 0, distributed = 0;
   for (const s of active) {
     let amt = 0;
-    if (s.plan === "elite") { amt = ELITE_PER_CYCLE; elite++; }
-    else if (s.plan === "pro") { amt = PRO_PER_CYCLE; pro++; }
+    if (s.plan === "elite")          { amt = settings.elitePerCycle;     elite++; }
+    else if (s.plan === "pro")       { amt = settings.proPerCycle;       pro++; }
+    else if (s.plan === "developer") { amt = settings.developerPerCycle; developer++; }
     if (amt > 0) {
       await store.ledgerInsert({
         telegramId: s.telegramId,
@@ -39,13 +44,24 @@ export async function runAutoEarn() {
 
   await store.logActivity(
     "AUTO-EARN",
-    `Distributed ${distributed.toFixed(4)} TON to ${elite + pro} subscribers`,
-    `${elite} ELITE × ${ELITE_PER_CYCLE} + ${pro} PRO × ${PRO_PER_CYCLE} = ${distributed.toFixed(4)} TON`,
+    `Distributed ${distributed.toFixed(4)} TON to ${elite + pro + developer} subscribers`,
+    `${elite}×ELITE + ${pro}×PRO + ${developer}×DEV = ${distributed.toFixed(4)} TON`,
     "info",
-    { elite, pro, distributed },
+    { elite, pro, developer, distributed },
   );
-  logger.debug({ elite, pro, distributed }, "[AUTO-EARN] cycle complete");
-  return { elite, pro, distributed };
+  logger.debug({ elite, pro, developer, distributed }, "[AUTO-EARN] cycle complete");
+  return { elite, pro, developer, distributed };
 }
 
-export const RATES = { elitePerCycle: ELITE_PER_CYCLE, proPerCycle: PRO_PER_CYCLE, intervalMin: 6 };
+// Live-rate getter (used by /api/billing/auto-earn/stats etc.)
+export async function getRates() {
+  const s = await getSettings();
+  return {
+    elitePerCycle: s.elitePerCycle,
+    proPerCycle: s.proPerCycle,
+    developerPerCycle: s.developerPerCycle,
+    intervalMin: s.autoEarnIntervalMin,
+  };
+}
+
+export const RATES = { elitePerCycle: 0.0010, proPerCycle: 0.0003, intervalMin: 6 };

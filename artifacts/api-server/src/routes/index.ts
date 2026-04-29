@@ -17,6 +17,8 @@ import nexusRouter         from "./nexus";
 import dashboardRouter     from "./dashboard";
 import telegramRouter      from "./telegram";
 import tonRouter2          from "./ton";
+import creatorRouter       from "./creator";
+import developerRouter     from "./developer";
 
 const router: IRouter = Router();
 
@@ -38,5 +40,7 @@ router.use(nexusRouter);
 router.use(dashboardRouter);
 router.use(telegramRouter);
 router.use(tonRouter2);
+router.use(creatorRouter);
+router.use(developerRouter);
 
 export default router;
