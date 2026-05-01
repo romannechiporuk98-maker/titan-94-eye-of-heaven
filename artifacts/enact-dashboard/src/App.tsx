@@ -30,6 +30,7 @@ import Protocol94Page from "@/pages/protocol-94";
 import VaultPage from "@/pages/vault";
 import AccessPage from "@/pages/access";
 import { Splash } from "@/components/splash";
+import { DevModeOverlay } from "@/components/dev-mode";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -98,6 +99,7 @@ export default function App() {
           </WouterRouter>
           <Splash />
           <Toaster />
+          <DevModeOverlay />
         </TooltipProvider>
       </QueryClientProvider>
     </TonConnectUIProvider>
