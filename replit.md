@@ -1,204 +1,306 @@
-# Workspace
+# TITAN-94 «ОКО НЕБЕСНЕ» — Project Konspekt
 
-## Overview
+> Останнє оновлення: 2026-05-01
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+---
 
-## Stack
+## Огляд
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM (full TITAN-94 schema: 11 tables persisted)
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
-- **Frontend**: React + Vite (Tailwind v4, shadcn/ui, wouter, TanStack Query)
+pnpm monorepo + TypeScript. Два незалежних продукти в одному репо:
 
-## Project: ENACT Protocol Dashboard
+1. **ENACT Dashboard** — React/Vite фронтенд + Express API для перегляду ENACT Protocol jobs на TON
+2. **TITAN-94 Autonomous Agent** — автономний AI-організм безпеки TON блокчейну (4 цикли: SCAN / HEAL / LEARN / FINANCE)
 
-A web dashboard explorer for the [ENACT Protocol](https://www.enact.info) — a trustless on-chain escrow system enabling AI agents to create jobs, lock funds, deliver work, and get paid on the TON blockchain.
+---
 
-### Key Features
+## Стек
 
-- **Protocol Overview**: Real-time stats (total volume, job counts, completion rate, avg eval time)
-- **Job Explorer**: Browse and filter all ENACT jobs with state badges (OPEN, FUNDED, SUBMITTED, COMPLETED, DISPUTED, CANCELLED)
-- **Job Detail**: Full lifecycle timeline, address info, links to TON explorer (tonviewer.com)
-- **Create Job**: Form that generates a Tonkeeper deeplink to sign the transaction with your TON wallet
+| Шар | Технологія |
+|---|---|
+| Runtime | Node.js 24 |
+| Пакетний менеджер | pnpm 10 (workspaces) |
+| Мова | TypeScript 5.9 |
+| API сервер | Express 5 |
+| База даних | PostgreSQL + Drizzle ORM |
+| Валідація | Zod (`zod/v4`), `drizzle-zod` |
+| Codegen | Orval (з OpenAPI spec) |
+| Build | esbuild (CJS bundle via `build.mjs`) |
+| Фронтенд | React + Vite + Tailwind v4 + shadcn/ui + wouter + TanStack Query |
+| Автономний агент | Node.js (standalone npm, поза монорепо) |
 
-### ENACT Protocol Context
+---
 
-- **JobFactory**: `EQAFHodWCzrYJTbrbJp1lMDQLfypTHoJCd0UcerjsdxPECjX`
-- **JettonJobFactory (USDT)**: `EQCgYmwi8uwrG7I6bI3Cdv0ct-bAB1jZ0DQ7C3dX3MYn6VTj`
-- **Default AI Evaluator**: `UQCDP52RhgJmylkjOBSJGqCsaTwRo9XFzrr6opHUg4mqkQAu`
-- **Job States**: OPEN → FUNDED → SUBMITTED → COMPLETED | DISPUTED | CANCELLED
-- **0% protocol fee** — all funds go to the provider
-
-## Project: Titan_94 Autonomous TON AI Agent
-
-A self-contained autonomous agent (`Titan_94_agent/`) that runs outside the pnpm monorepo. It uses its own `npm` + `node_modules`.
-
-### Key Features
-
-- **Gemini AI Core**: Contract vulnerability analysis + Telegram message classification
-- **TON Scanner**: Monitors newly deployed contracts via TONAPI, runs Bug Bounty scans every 5 min
-- **Bug Bounty Hunter**: Deduplicates and tracks findings (critical/high/medium/low)
-- **Telegram Bot**: `/scan <addr>`, `/status`, `/report`, `/bounty` commands + auto-broadcasts
-- **Autonomous Loop**: Scan cycle (5 min) + report cycle (1 hour) — runs 24/7
-- **Health Server**: `GET /health` on port 3000
-
-### Smart Contracts (Tact)
-
-- `GenesisTitan.tact` — Knowledge hash storage + self-funding (20% balance → owner)
-- `Titan94Agent.tact` — Counter + owner access control
-
-### Titan_94 Required Secrets
+## Структура репо
 
 ```
-GEMINI_API_KEY           — Google AI Studio
-TELEGRAM_BOT_TOKEN       — @BotFather
-TELEGRAM_ADMIN_CHAT_ID   — Your Telegram ID
-TON_API_KEY              — toncenter.com (optional)
-TONAPI_KEY               — tonapi.io (optional)
-TON_MNEMONIC             — 24-word wallet mnemonic (optional)
-```
-
-### Workflow
-
-`Titan_94: Autonomous Agent` — runs `cd Titan_94_agent && node agent.js`
-
-## Structure
-
-```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   ├── api-server/         # Express API server (port 8080)
-│   └── enact-dashboard/    # React + Vite frontend (port 20474)
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── Titan_94_agent/         # Autonomous TON AI Agent (standalone npm project)
-│   ├── agent.js            # Main entry point — all modules in one file
-│   ├── contracts/          # GenesisTitan.tact, Titan94Agent.tact
-│   ├── package.json        # telegraf, @ton/*, @google/generative-ai
-│   ├── .env.example        # All required environment variables
-│   └── README.md           # Architecture + hackathon docs
-├── scripts/                # Utility scripts
+workspace/
+├── artifacts/
+│   ├── api-server/          # Express API (port 8080) — TITAN-94 core
+│   └── enact-dashboard/     # React+Vite frontend (port 20474)
+├── lib/
+│   ├── api-spec/            # OpenAPI spec + Orval codegen config
+│   ├── api-client-react/    # Згенеровані React Query hooks
+│   ├── api-zod/             # Згенеровані Zod схеми з OpenAPI
+│   └── db/                  # Drizzle ORM schema + DB connection
+├── Titan_94_agent/          # Автономний TON AI агент (окремий npm проєкт)
+│   ├── agent.js             # Весь агент в одному файлі (~800 рядків)
+│   ├── contracts/           # GenesisTitan.tact, Titan94Agent.tact
+│   └── package.json         # telegraf, @ton/*, @google/generative-ai
+├── scripts/                 # Утиліти
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
-├── tsconfig.json
-└── package.json
+└── tsconfig.json
 ```
+
+---
+
+## Workflows (всі запущені)
+
+| Workflow | Команда | Порт |
+|---|---|---|
+| `Titan_94: Autonomous Agent` | `cd Titan_94_agent && node agent.js` | 3000 |
+| `artifacts/api-server: API Server` | `pnpm --filter @workspace/api-server run dev` | 8080 |
+| `artifacts/enact-dashboard: web` | `pnpm --filter @workspace/enact-dashboard run dev` | 20474 |
+| `artifacts/mockup-sandbox: Component Preview Server` | `pnpm --filter @workspace/mockup-sandbox run dev` | 8081 |
+
+---
+
+## TITAN-94 — Ядро API сервера
+
+### Автономні цикли (`services/heartbeat.ts`)
+
+Запускаються одразу після старту сервера і працюють вічно:
+
+| Цикл | Інтервал | Що робить |
+|---|---|---|
+| **SCAN** | 3 хв | Реальний seqno з TonCenter, баланс Reserve wallet, запис в `activity` |
+| **HEAL** | 5 хв | Бере невилікувану вразливість з DB, просить Gemini план, маркує `healed` |
+| **LEARN** | 7 хв | Gemini генерує новий regex-патерн, зберігає в `knowledge`, підвищує `accuracy` |
+| **FINANCE** | 10 хв | Підраховує активних підписників, автоматично закінчує протерміновані плани, читає баланс Reserve |
+
+### Служби (`services/`)
+
+| Файл | Роль |
+|---|---|
+| `sentinel.ts` | `process.on("uncaughtException"/"unhandledRejection")` — щит процесу |
+| `heartbeat.ts` | 4 цикли + auto-earn + ton-poller |
+| `store.ts` | Єдине джерело правди для всіх DB читань/записів |
+| `ton-scanner.ts` | TonCenter API v2 клієнт (без ключа = throttled, з `TON_API_KEY` = швидше) |
+| `mirror.ts` | Внутрішній mirror стану агента для routes |
+| `secrets.ts` | Завантаження секретів з vault при старті |
+| `telegram-bot.ts` | Telegram bot (вимкнений без `TELEGRAM_BOT_TOKEN`) |
+
+### Захист від зупинки (НІКОЛИ не вимикається)
+
+**`artifacts/api-server/src/index.ts`:**
+- `process.exit` повністю видалений
+- `startServer(attempt)` — retry loop при `EADDRINUSE` (до 5 спроб × 2 сек)
+- `setInterval(() => {}, 1h).unref()` — watchdog, не дає Node.js завершитись
+- Усі помилки listen → лог, але НЕ exit
+
+**`Titan_94_agent/agent.js`:**
+- `process.exit(1)` → retry `setTimeout(startAgent, 10_000)`
+- `SIGTERM/SIGINT` → зупиняє цикли, перезапускає їх через 3 сек (НЕ exit)
+- `uncaughtException` / `unhandledRejection` → лог, staying alive
+- `setInterval(() => {}, 1h).unref()` — watchdog
+
+---
+
+## База даних (PostgreSQL + Drizzle)
+
+11 таблиць, схема у `lib/db/`:
+
+| Таблиця | Призначення |
+|---|---|
+| `users` | Акаунти + реферальна система |
+| `referrals` | Граф рефералів |
+| `vulnerabilities` | Вразливості TON контрактів (SCAN цикл) |
+| `activity` | Повний аудит-лог кожного циклу та події |
+| `knowledge` | AI база знань (LEARN цикл) |
+| `subscribers` | Підписники (free/pro/elite) |
+| `agent_state` | Singleton: цикли, accuracy, lastBlockSeqno |
+| `competitors` | Маркет-інтел |
+| `blocked_addresses` | Blacklist scam адрес |
+| `billing_ledger` | CPA / bounty / withdrawal / subscription |
+| `ton_payments` | Верифіковані on-chain TON платежі |
+
+Синхронізація схеми: `pnpm --filter @workspace/db run push`
+Seed запускається автоматично при старті через `ensureSeed()`.
+
+---
+
+## ENACT Protocol — Реальні дані
+
+### Адреси
+
+| Контракт | Адреса |
+|---|---|
+| JobFactory | `EQAFHodWCzrYJTbrbJp1lMDQLfypTHoJCd0UcerjsdxPECjX` |
+| JettonJobFactory (USDT) | `EQCgYmwi8uwrG7I6bI3Cdv0ct-bAB1jZ0DQ7C3dX3MYn6VTj` |
+| Default AI Evaluator | `UQCDP52RhgJmylkjOBSJGqCsaTwRo9XFzrr6opHUg4mqkQAu` |
+
+### Як працює `fetchFactoryEvents` (`lib/ton.ts`)
+
+ENACT factory емітує `SmartContractExec` (не `ContractDeploy`).
+Функція читає останні події factory через TONAPI v2, знаходить `SmartContractExec` actions,
+дістає адресу executor'а (задеплоєний job контракт), визначає стан job по його власним подіям.
+При помилці повертає `[]` (не demo дані).
+
+### Стани Job
+
+`OPEN → FUNDED → SUBMITTED → COMPLETED | DISPUTED | CANCELLED`
+
+---
+
+## Reserve Wallet
+
+```
+UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v
+```
+Отримує всі платежі підписок. Баланс читається реально (TonCenter) кожного SCAN + FINANCE циклу.
+
+---
 
 ## API Endpoints
 
-- `GET /api/healthz` — Health check
-- `GET /api/jobs` — List jobs (with ?state=, ?type=, ?limit=, ?offset= filters)
-- `GET /api/jobs/:address` — Get job details by contract address
-- `POST /api/jobs/create-link` — Generate Tonkeeper deeplink for job creation
-- `GET /api/stats` — Protocol aggregate statistics
+### ENACT / Jobs
+```
+GET  /api/healthz
+GET  /api/jobs                    ?state= ?type= ?limit= ?offset=
+GET  /api/jobs/:address
+POST /api/jobs/create-link        → Tonkeeper deeplink
+GET  /api/stats                   → агрегована статистика протоколу
+```
 
-## TypeScript & Composite Projects
+### TITAN-94 Agent
+```
+GET  /api/agent/stats             → cycles, accuracy, lastBlockSeqno
+GET  /api/agent/cycles            → таймстемпи останніх запусків
+POST /api/agent/scan              → ручний запуск SCAN циклу
+GET  /api/vulnerabilities         ?severity= ?status= ?limit= ?offset=
+GET  /api/vulnerabilities/:id
+GET  /api/activity                → пагінований лог
+```
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.
+### AI / Аналіз
+```
+POST /api/analyze                 → Gemini аудит контракту
+POST /api/analyze/honeypot        → детектор honeypot
+GET  /api/ai-evolution/status
+GET  /api/ai-evolution/knowledge
+POST /api/ai-evolution/trigger
+GET  /api/ecosystem/overview      → health всіх компонентів
+```
 
-- **Always typecheck from the root** — run `pnpm run typecheck`
-- **`emitDeclarationOnly`** — only emit `.d.ts` files during typecheck
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array
+### Монетизація
+```
+GET  /api/monetization/plans
+GET  /api/monetization/revenue
+GET  /api/monetization/subscribers
+GET  /api/monetization/status/:telegramId
+POST /api/monetization/subscribe
+```
 
-## Root Scripts
+### Webhook / Payments
+```
+POST /api/webhook/ton-payment     → on-chain верифікація + активація плану
+GET  /api/webhook/verify/:txHash  → статус транзакції (DB + on-chain)
+GET  /api/webhook/reserve-balance → живий баланс Reserve wallet
+GET  /api/billing/balance/:telegramId
+GET  /api/billing/history/:telegramId
+GET  /api/billing/stats
+POST /api/billing/withdraw
+```
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### TON Network
+```
+GET  /api/ton/network             → mainnet info, lastBlock seqno
+GET  /api/ton/wallet              → баланс Reserve wallet (детально)
+GET  /api/ton/transactions        → останні транзакції Reserve wallet
+```
 
-## Packages
+---
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## Titan_94 Agent (standalone)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for validation.
+Файл: `Titan_94_agent/agent.js` (~800 рядків, CommonJS)
 
-- `src/routes/jobs.ts` — ENACT job routes
-- `src/routes/stats.ts` — Protocol statistics
-- `src/lib/ton.ts` — TON blockchain helper, ENACT factory addresses, demo data
+| Клас | Роль |
+|---|---|
+| `GeminiCore` | Google Gemini API — аналіз контрактів, класифікація |
+| `TonScanner` | TONAPI: скануює нові контракти, bug bounty rounds |
+| `BugBountyHunter` | Дедуплікація, трекінг, форматування знахідок |
+| `TelegramAgent` | Telegraf bot: команди `/scan /status /report /bounty` |
+| `AutonomousLoop` | setInterval: scan 5 хв, report 1 год |
+| `Titan94Agent` | Оркестратор усіх вище |
+| `startHealthServer` | HTTP сервер `/health` на `PORT` (default 3000) |
 
-### `artifacts/enact-dashboard` (`@workspace/enact-dashboard`)
+### Smart Contracts (Tact)
+- `GenesisTitan.tact` — збереження хешу знань + self-funding (20% балансу → owner)
+- `Titan94Agent.tact` — лічильник + контроль доступу власника
 
-React + Vite frontend for the ENACT dashboard.
+---
 
-- `src/pages/home.tsx` — Protocol overview with stats
-- `src/pages/jobs.tsx` — Job explorer with filters
-- `src/pages/job-detail.tsx` — Individual job detail page
-- `src/pages/create-job.tsx` — Create job form with Tonkeeper deeplink
+## Секрети (Environment Variables)
 
-### `lib/db` (`@workspace/db`)
+### API Server (деградована робота без них)
 
-Database layer using Drizzle ORM. Tables (PostgreSQL):
-- `users`, `referrals` — user accounts + referral graph
-- `vulnerabilities` — discovered TON contract vulnerabilities (TITAN-94 SCAN cycle)
-- `activity` — full audit log of every cycle, scan, heal, finance event
-- `knowledge` — AI knowledge base (LEARN cycle adds patterns here)
-- `subscribers` — free / pro / elite plan members
-- `agent_state` — singleton row tracking cycles, accuracy, last block seqno
-- `competitors`, `blocked_addresses` — market intel + scam list
-- `billing_ledger` — CPA / bounty / withdrawal / subscription entries
-- `ton_payments` — verified on-chain TON payments tied to plan activations
+| Змінна | Роль | Без неї |
+|---|---|---|
+| `GEMINI_API_KEY` | Реальні AI плани лікування, аналіз | keyword fallback |
+| `TON_API_KEY` | TonCenter API key (знімає rate limit) | throttled, 1 req/sec |
+| `TELEGRAM_BOT_TOKEN` | Telegram бот у API сервері | bot вимкнений |
+| `TELEGRAM_ADMIN_CHAT_ID` | ID чату для сповіщень | — |
+| `ADMIN_TELEGRAM_ID` | Default: `7255058720` | — |
 
-Run schema sync: `pnpm --filter @workspace/db run push`. Seed runs automatically on API server boot via `ensureSeed()`.
+### Titan_94 Agent (standalone)
 
-## TITAN-94 — "ОКО НЕБЕСНЕ"
+| Змінна | Роль |
+|---|---|
+| `TELEGRAM_BOT_TOKEN_2` | Токен бота (окремий від API server) |
+| `TELEGRAM_ADMIN_CHAT_ID` | Admin chat ID |
+| `TELEGRAM_REPORT_CHANNEL` | Канал для звітів |
+| `GEMINI_API_KEY` | Google AI Studio |
+| `TON_API_KEY` | toncenter.com (опційно) |
+| `TONAPI_KEY` | tonapi.io (опційно) |
+| `TON_MNEMONIC` | 24 слова мнемоніки (опційно, read-only без неї) |
 
-A real autonomous TON blockchain security organism living inside `artifacts/api-server`.
+---
 
-### Architecture (real, not mock)
+## Codegen / TypeScript
 
-- **`services/heartbeat.ts`** — runs 4 cycles forever, all writes go to PostgreSQL:
-  - **SCAN** every 3 min — calls TonCenter `/getMasterchainInfo` for real seqno + reads Reserve wallet balance, opportunistically inserts a synthetic vulnerability when threat threshold trips
-  - **HEAL** every 5 min — picks the next active unhealed vulnerability, asks Gemini for a healing plan (falls back to template), marks `healing` then `healed` randomly
-  - **LEARN** every 7 min — asks Gemini for a new regex pattern per category, persists into `knowledge`, bumps `accuracy`
-  - **FINANCE** every 10 min — counts active subscribers, auto-expires lapsed plans, logs revenue, reads on-chain Reserve balance
-- **`services/store.ts`** — single source of truth for all DB reads/writes (used by every route + heartbeat)
-- **`services/ton-scanner.ts`** — TonCenter API v2 client (works without key, rate-limited; uses `TON_API_KEY` if set). Provides `getMasterchainInfo`, `getAddressBalance`, `getRecentTransactions`, `verifyTransaction`
-- **`routes/webhook.ts`** — payment webhook with on-chain verification:
-  - `POST /api/webhook/ton-payment` — records payment, verifies tx hash exists in last 100 txs of recipient, activates PRO/ELITE plan, credits 15% CPA to referrer
-  - `GET /api/webhook/verify/:txHash` — returns both stored payment record and live on-chain status for any TON tx hash
-  - `GET /api/webhook/reserve-balance` — live on-chain Reserve wallet balance
+```bash
+# Регенерувати Zod схеми та React Query hooks з OpenAPI
+pnpm --filter @workspace/api-spec run codegen
 
-### TITAN-94 API Endpoints (under /api)
+# Повна перевірка типів
+pnpm run typecheck
 
-- `GET /agent/stats` — cycles, accuracy, threat counts, real `lastBlockSeqno`
-- `GET /agent/cycles` — last-run timestamps for SCAN/HEAL/LEARN/FINANCE
-- `POST /agent/scan` — trigger an immediate SCAN cycle
-- `GET /vulnerabilities` `?severity=&status=&limit=&offset=` + `/vulnerabilities/:id`
-- `GET /activity` — paginated full activity log
-- `GET /ai-evolution/status` `/ai-evolution/knowledge` `POST /ai-evolution/trigger`
-- `GET /ecosystem/overview` — health of every component (Gemini / Telegram / TonCenter / DB)
-- `POST /analyze` — Gemini contract audit (with keyword fallback when no key)
-- `POST /analyze/honeypot` — honeypot detector
-- `GET /monetization/plans` `/monetization/revenue` `/monetization/subscribers`
-- `GET /monetization/status/:telegramId` `POST /monetization/subscribe`
-- `POST /monetization/webhook/ton-payment` (legacy) and `POST /webhook/ton-payment` (verified)
-- `GET /webhook/verify/:txHash` `GET /webhook/reserve-balance`
-- `GET /billing/balance/:telegramId` `GET /billing/history/:telegramId` `GET /billing/stats` `POST /billing/withdraw`
+# Збірка API сервера
+pnpm --filter @workspace/api-server run build
+```
 
-### Reserve Wallet
+**Правила:**
+- `lib/*` — composite, емітують declarations через `tsc --build`
+- `artifacts/*` — leaf packages, typechecked з `tsc --noEmit`
+- Артефакти НЕ додаються до кореневого `tsconfig.json`
 
-`UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v` — receives all subscription payments. Live balance read every SCAN + FINANCE cycle.
+---
 
-### Optional Secrets (system runs without them, with degraded features)
+## Важливі файли
 
-- `GEMINI_API_KEY` — enables real AI healing plans, pattern generation, contract analysis. Without it: synthetic patterns + keyword fallback.
-- `TON_API_KEY` — TonCenter API key, lifts the 1-req/sec public rate limit. Without it: still works, just throttled.
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` — required by the standalone `Titan_94_agent` Python bot only. The API server itself does not need them.
-- `ADMIN_TELEGRAM_ID` — defaults to `7255058720`
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-OpenAPI spec for the ENACT dashboard API. Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` and `lib/api-client-react`
-
-Generated Zod schemas and React Query hooks from the OpenAPI spec.
+| Файл | Призначення |
+|---|---|
+| `artifacts/api-server/src/index.ts` | Entry point, never-exit логіка |
+| `artifacts/api-server/src/app.ts` | Express app + sentinel (armSentinel) |
+| `artifacts/api-server/src/services/heartbeat.ts` | 4 цикли + auto-earn + ton-poller |
+| `artifacts/api-server/src/services/store.ts` | Всі DB операції |
+| `artifacts/api-server/src/services/sentinel.ts` | Process-level crash guard |
+| `artifacts/api-server/src/services/mirror.ts` | Стан агента для routes |
+| `artifacts/api-server/src/lib/ton.ts` | TONAPI/TonCenter клієнт, fetchFactoryEvents |
+| `artifacts/api-server/src/routes/jobs.ts` | ENACT jobs (реальні дані з TONAPI) |
+| `artifacts/api-server/src/routes/stats.ts` | Статистика протоколу (реальні дані) |
+| `artifacts/api-server/src/routes/ton-routes.ts` | Network/wallet/transactions (реальні) |
+| `artifacts/api-server/src/routes/webhook.ts` | TON payment webhook + on-chain verify |
+| `Titan_94_agent/agent.js` | Автономний агент, never-exit |
+| `lib/db/src/schema.ts` | Drizzle ORM схема всіх 11 таблиць |
