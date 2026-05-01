@@ -3,26 +3,31 @@
  *
  * - Desktop (>= md): static left sidebar + main content
  * - Mobile (< md):   compact top bar + slide-out drawer (hamburger)
- * - Cyberpunk theme is dark-only by design (no light mode toggle)
- * - Language: uk (default) / en / ru, toggled via globe button (top-right)
- * - Timezone: auto/Київ/UTC/London/NY/Singapore with live clock
- *
- * Prefs persist in localStorage via lib/ui-prefs.ts.
+ * - Nav visibility controlled by creator settings (fetched from /api/creator/public-settings)
+ * - Each nav item has an info (ℹ) button that shows description + user instructions
  */
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
   Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound, Crown,
-  Menu, X, Languages, Clock,
+  Menu, X, Languages, Clock, Info, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang, useTimezone, fmtClock, resolveTz, TZ_OPTIONS, t, type Lang } from "@/lib/ui-prefs";
 
-type NavItem = { href: string; tkey: string; icon: typeof Cpu; group: "titan" | "agent" | "enact" };
+export type NavGroup = "titan" | "agent" | "enact";
 
-const NAV_ITEMS: NavItem[] = [
+export type NavItem = {
+  href: string;
+  tkey: string;
+  icon: typeof Cpu;
+  group: NavGroup;
+};
+
+export const NAV_ITEMS: NavItem[] = [
   { href: "/",          tkey: "nav.command",   icon: Cpu,        group: "titan" },
   { href: "/threats",   tkey: "nav.threats",   icon: Shield,     group: "titan" },
   { href: "/contracts", tkey: "nav.contracts", icon: FileCode,   group: "titan" },
@@ -45,9 +50,90 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const GROUP_KEYS = { titan: "group.titan", agent: "group.agent", enact: "group.enact" } as const;
-const GROUPS = ["titan", "agent", "enact"] as const;
+const GROUPS: NavGroup[] = ["titan", "agent", "enact"];
 
-/* ── Top-right control cluster: Theme + Language ─────────────────────── */
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
+
+function useNavVisibility(): Record<string, boolean> {
+  const { data } = useQuery<{ navVisibility: Record<string, boolean> }>({
+    queryKey: ["public-nav-settings"],
+    queryFn: () => fetch(`${BASE}/api/creator/public-settings`).then((r) => r.json()),
+    staleTime: 30_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  return data?.navVisibility ?? {};
+}
+
+/* ── Info Modal ─────────────────────────────────────────────────────────── */
+function InfoModal({ item, lang, onClose }: { item: NavItem; lang: Lang; onClose: () => void }) {
+  const label = t(item.tkey, lang);
+  const desc  = t(item.tkey + ".desc", lang);
+  const instr = t(item.tkey + ".instr", lang);
+  const hasDesc  = !desc.startsWith("nav.");
+  const hasInstr = !instr.startsWith("nav.");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm rounded-lg border p-5 shadow-2xl"
+        style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.3)", boxShadow: "0 0 40px rgba(0,255,255,0.15)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <item.icon className="w-4 h-4" style={{ color: "#00FFFF" }} />
+            <span className="font-bold text-sm" style={{ color: "#00FFFF" }}>{label}</span>
+          </div>
+          <button onClick={onClose} className="p-1 hover:text-white transition-colors" style={{ color: "rgba(207,255,255,0.5)" }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Description */}
+        {hasDesc && (
+          <div className="mb-4">
+            <div className="flex items-center gap-1 mb-1.5 text-xs font-bold tracking-wider" style={{ color: "rgba(0,255,255,0.6)" }}>
+              <Info className="w-3 h-3" />{t("info.how_it_works", lang)}
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(207,255,255,0.8)" }}>{desc}</p>
+          </div>
+        )}
+
+        {/* Instructions */}
+        {hasInstr && (
+          <div className="pt-3 border-t" style={{ borderColor: "rgba(0,255,255,0.1)" }}>
+            <div className="flex items-center gap-1 mb-1.5 text-xs font-bold tracking-wider" style={{ color: "rgba(255,140,0,0.8)" }}>
+              <BookOpen className="w-3 h-3" />{t("info.instructions", lang)} · {t("info.for_users", lang)}
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: "rgba(207,255,255,0.7)" }}>{instr}</p>
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="mt-4 w-full py-1.5 text-xs font-bold border transition-colors hover:bg-cyan-500/10"
+          style={{ borderColor: "rgba(0,255,255,0.3)", color: "rgba(0,255,255,0.7)" }}
+        >
+          {t("info.close", lang)}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Top-right control cluster: Timezone + Language ─────────────────────── */
 function PrefsCluster({ compact = false }: { compact?: boolean }) {
   const { lang, setLang } = useLang();
   const { tz, setTz } = useTimezone();
@@ -56,7 +142,6 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
   const [now,      setNow]      = useState(() => new Date());
   const ref = useRef<HTMLDivElement>(null);
 
-  // Live clock updates every second
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -88,8 +173,9 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className="flex items-center gap-1" ref={ref}>
-      {/* Live clock — desktop only (mobile sees per-tz clock inside the picker) */}
-      <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded border tabular-nums"
+      {/* Live clock */}
+      <div
+        className="hidden md:flex items-center gap-1 px-2 py-1 rounded border tabular-nums"
         style={{
           borderColor: "rgba(0,255,255,0.2)",
           color: "rgba(207,255,255,0.85)",
@@ -97,22 +183,21 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
           fontSize: compact ? "10px" : "11px",
           fontFamily: "'Space Mono', monospace",
         }}
-        title={`${tzShort} · ${resolveTz(tz)}`}>
+        title={`${tzShort} · ${resolveTz(tz)}`}
+      >
         <Clock className="w-3 h-3 opacity-60" />
         <span>{fmtClock(now, tz)}</span>
       </div>
 
       {/* Timezone picker */}
       <div className="relative">
-        <button onClick={() => { setOpenTz(o => !o); setOpenLang(false); }}
+        <button
+          onClick={() => { setOpenTz(o => !o); setOpenLang(false); }}
           className={`${btnSize} rounded border transition-colors flex items-center gap-1`}
-          style={{
-            borderColor: "rgba(0,255,255,0.3)",
-            color: "var(--titan-primary, #00FFFF)",
-            background: "transparent",
-          }}
+          style={{ borderColor: "rgba(0,255,255,0.3)", color: "var(--titan-primary, #00FFFF)", background: "transparent" }}
           aria-label={t("btn.tz", lang)}
-          title={`${t("btn.tz", lang)} · ${tzShort}`}>
+          title={`${t("btn.tz", lang)} · ${tzShort}`}
+        >
           <Clock className={iconSize} />
           <span className="text-[10px] font-bold tracking-wider hidden sm:inline">{tzShort.slice(0,3).toUpperCase()}</span>
         </button>
@@ -135,15 +220,13 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
 
       {/* Language picker */}
       <div className="relative">
-        <button onClick={() => { setOpenLang(o => !o); setOpenTz(false); }}
+        <button
+          onClick={() => { setOpenLang(o => !o); setOpenTz(false); }}
           className={`${btnSize} rounded border transition-colors flex items-center gap-1`}
-          style={{
-            borderColor: "rgba(0,255,255,0.3)",
-            color: "var(--titan-primary, #00FFFF)",
-            background: "transparent",
-          }}
+          style={{ borderColor: "rgba(0,255,255,0.3)", color: "var(--titan-primary, #00FFFF)", background: "transparent" }}
           aria-label={t("btn.lang", lang)}
-          title={t("btn.lang", lang)}>
+          title={t("btn.lang", lang)}
+        >
           <Languages className={iconSize} />
           <span className="text-[10px] font-bold tracking-wider">{currentFlag}</span>
         </button>
@@ -170,17 +253,19 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [infoItem,   setInfoItem]   = useState<NavItem | null>(null);
   const { lang } = useLang();
+  const navVis = useNavVisibility();
 
-  // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [location]);
-
-  // Lock body scroll when drawer open
   useEffect(() => {
     if (drawerOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [drawerOpen]);
+
+  // Filtered nav: item is visible unless creator explicitly set it to false
+  const visibleNav = NAV_ITEMS.filter(item => navVis[item.href] !== false);
 
   const SidebarContent = (
     <>
@@ -193,57 +278,78 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
           <span className="text-xs" style={{ color: "#00FF88" }}>{t("tag.live", lang)}</span>
         </div>
-        {/* Close button (only mobile drawer) */}
-        <button onClick={() => setDrawerOpen(false)}
+        <button
+          onClick={() => setDrawerOpen(false)}
           className="md:hidden ml-2 p-1.5 -mr-1 rounded text-cyan-400/70 hover:text-cyan-300 hover:bg-cyan-400/10"
-          aria-label={t("btn.menu_close", lang)}>
+          aria-label={t("btn.menu_close", lang)}
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       <nav className="flex-1 py-3 px-2 overflow-y-auto">
-        {GROUPS.map(group => (
-          <div key={group} className="mb-4">
-            <div className="px-3 mb-1 text-xs font-bold tracking-widest" style={{ color: "rgba(0,255,255,0.4)" }}>
-              ── {t(GROUP_KEYS[group], lang)} ──
+        {GROUPS.map(group => {
+          const groupItems = visibleNav.filter(n => n.group === group);
+          if (groupItems.length === 0) return null;
+          return (
+            <div key={group} className="mb-4">
+              <div className="px-3 mb-1 text-xs font-bold tracking-widest" style={{ color: "rgba(0,255,255,0.4)" }}>
+                ── {t(GROUP_KEYS[group], lang)} ──
+              </div>
+              {groupItems.map(item => {
+                const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+                const Icon = item.icon;
+                const hasDesc = !t(item.tkey + ".desc", lang).startsWith("nav.");
+                return (
+                  <div key={item.href} className="flex items-center group/nav">
+                    <Link
+                      href={item.href}
+                      className={cn("flex-1 flex items-center gap-3 px-3 py-2 text-xs font-medium transition-all duration-150 hover:text-cyan-300")}
+                      style={{
+                        borderLeftColor: isActive ? "#00FFFF" : "transparent",
+                        borderLeftWidth: "2px",
+                        background: isActive ? "rgba(0,255,255,0.07)" : "transparent",
+                        color: isActive ? "#00FFFF" : "rgba(207,255,255,0.6)",
+                      }}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {t(item.tkey, lang)}
+                    </Link>
+                    {hasDesc && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setInfoItem(item); }}
+                        className="shrink-0 p-1.5 mr-1 rounded opacity-0 group-hover/nav:opacity-100 transition-opacity hover:bg-cyan-500/15"
+                        style={{ color: "rgba(0,255,255,0.5)" }}
+                        title={t("info.how_it_works", lang)}
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {NAV_ITEMS.filter(n => n.group === group).map(item => {
-              const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn("flex items-center gap-3 px-3 py-2 text-xs font-medium transition-all duration-150 hover:text-cyan-300")}
-                  style={{
-                    borderLeftColor: isActive ? "#00FFFF" : "transparent",
-                    borderLeftWidth: "2px",
-                    background: isActive ? "rgba(0,255,255,0.07)" : "transparent",
-                    color: isActive ? "#00FFFF" : "rgba(207,255,255,0.6)",
-                  }}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {t(item.tkey, lang)}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t text-xs shrink-0" style={{ borderColor: "rgba(0,255,255,0.15)" }}>
         <div className="mb-2" style={{ color: "rgba(0,255,255,0.4)" }}>── {t("tag.contracts", lang)} ──</div>
         <div className="space-y-1">
-          <a href="https://tonviewer.com/EQAFHodWCzrYJTbrbJp1lMDQLfypTHoJCd0UcerjsdxPECjX"
+          <a
+            href="https://tonviewer.com/EQAFHodWCzrYJTbrbJp1lMDQLfypTHoJCd0UcerjsdxPECjX"
             target="_blank" rel="noreferrer"
             className="flex items-center gap-1 hover:underline truncate"
-            style={{ color: "#00FFFF", fontSize: "10px" }}>
+            style={{ color: "#00FFFF", fontSize: "10px" }}
+          >
             ENACT Factory <ExternalLink className="w-2 h-2" />
           </a>
-          <a href="https://tonviewer.com/UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v"
+          <a
+            href="https://tonviewer.com/UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v"
             target="_blank" rel="noreferrer"
             className="flex items-center gap-1 hover:underline"
-            style={{ color: "#00FF88", fontSize: "10px" }}>
+            style={{ color: "#00FF88", fontSize: "10px" }}
+          >
             Reserve Fund <ExternalLink className="w-2 h-2" />
           </a>
         </div>
@@ -274,9 +380,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-[80] flex" onClick={() => setDrawerOpen(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <aside className="relative w-72 max-w-[85vw] flex flex-col border-r animate-slide-in"
+          <aside
+            className="relative w-72 max-w-[85vw] flex flex-col border-r animate-slide-in"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)", boxShadow: "0 0 60px rgba(0,255,255,0.15)" }}>
+            style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)", boxShadow: "0 0 60px rgba(0,255,255,0.15)" }}
+          >
             {SidebarContent}
           </aside>
         </div>
@@ -287,15 +395,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
         backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
       }} />
 
-      {/* MAIN AREA (with mobile top bar) */}
+      {/* Info Modal (above everything else) */}
+      {infoItem && (
+        <InfoModal item={infoItem} lang={lang} onClose={() => setInfoItem(null)} />
+      )}
+
+      {/* MAIN AREA */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0" style={{ background: "#030D18" }}>
 
         {/* MOBILE TOP BAR */}
         <div className="md:hidden h-12 flex items-center px-3 border-b shrink-0 z-40 gap-2"
           style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)" }}>
-          <button onClick={() => setDrawerOpen(true)}
+          <button
+            onClick={() => setDrawerOpen(true)}
             className="p-2 -ml-1 rounded text-cyan-400 hover:bg-cyan-400/10"
-            aria-label={t("btn.menu_open", lang)}>
+            aria-label={t("btn.menu_open", lang)}
+          >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex flex-col">
@@ -311,7 +426,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* DESKTOP TOP BAR (just the prefs cluster) */}
+        {/* DESKTOP TOP BAR */}
         <div className="hidden md:flex h-10 items-center justify-end px-4 border-b shrink-0 z-40"
           style={{ background: "rgba(6,15,26,0.6)", borderColor: "rgba(0,255,255,0.1)" }}>
           <PrefsCluster />
