@@ -60,6 +60,9 @@ export interface CreatorSettings {
   developerApiQuotaPerDay: number;
   developerCustomEnabled: boolean;
 
+  // Nav visibility — keys are href paths (e.g. "/threats"), false = hidden for all users
+  navVisibility: Record<string, boolean>;
+
   // Audit
   updatedAt: string;
   updatedBy: string;
@@ -91,6 +94,8 @@ const DEFAULTS: CreatorSettings = {
 
   developerApiQuotaPerDay: 10000,
   developerCustomEnabled: true,
+
+  navVisibility: {},
 
   updatedAt: new Date(0).toISOString(),
   updatedBy: "default",

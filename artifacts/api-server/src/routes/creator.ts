@@ -216,6 +216,12 @@ router.post("/creator/cycle/run/:cycle", requireCreator, async (req, res) => {
   }
 });
 
+// ─── Public: nav visibility (no auth required) ─────────────────────────
+router.get("/creator/public-settings", async (_req, res) => {
+  const s = await creator.getSettings();
+  res.json({ navVisibility: s.navVisibility || {} });
+});
+
 // ─── Developer mode purchase ────────────────────────────────────────────
 router.post("/creator/grant-developer/:tgId", requireCreator, async (req, res) => {
   const id = req.params.tgId;
