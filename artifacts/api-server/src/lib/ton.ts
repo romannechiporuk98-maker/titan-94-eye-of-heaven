@@ -95,12 +95,15 @@ export async function fetchFactoryEvents(limit = 50, offset = 0): Promise<Job[]>
     let idCounter = 1;
 
     for (const event of (data.events || [])) {
-      const deployAction = event.actions?.find(
-        (a) => a.type === "ContractDeploy" && a.ContractDeploy
+      // ENACT factory emits SmartContractExec (not ContractDeploy).
+      // The executor address of the first action is the deployed job contract.
+      const execAction = event.actions?.find(
+        (a) => a.type === "SmartContractExec" && (a as any).SmartContractExec?.executor?.address
       );
-      if (!deployAction?.ContractDeploy) continue;
+      if (!execAction) continue;
 
-      const jobAddress = deployAction.ContractDeploy.address;
+      const rawAddress: string = (execAction as any).SmartContractExec.executor.address;
+      const jobAddress = toUserFriendlyAddress(rawAddress);
 
       let jobState: JobState = "OPEN";
       try {
@@ -135,7 +138,7 @@ export async function fetchFactoryEvents(limit = 50, offset = 0): Promise<Job[]>
         client: event.account?.address || FACTORY_ADDRESS,
         provider: null,
         evaluator: DEFAULT_EVALUATOR,
-        budgetTon: nanoToTon(deployAction.base_coins || 1_000_000_000),
+        budgetTon: nanoToTon((execAction as any).SmartContractExec?.ton_attached || 1_000_000_000),
         budgetUsdt: null,
         descriptionHash: "0x" + Math.random().toString(16).slice(2).padEnd(64, "0"),
         descriptionText: null,
@@ -151,7 +154,7 @@ export async function fetchFactoryEvents(limit = 50, offset = 0): Promise<Job[]>
 
     return jobs.slice(offset, offset + limit);
   } catch {
-    return getDemoJobs().slice(offset, offset + limit);
+    return [];
   }
 }
 

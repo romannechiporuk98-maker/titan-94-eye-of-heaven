@@ -74,9 +74,18 @@ export async function reflect() {
   let agentSnap: any = null;
   let revenueSnap: any = null;
   let activitySnap: any = null;
-  try { agentSnap   = (store as any).getAgent?.()    ?? null; } catch {}
-  try { revenueSnap = (store as any).getRevenue?.()  ?? null; } catch {}
-  try { activitySnap= (store as any).getActivity?.()?.slice(0, 10) ?? null; } catch {}
+  try { agentSnap    = await store.getAgentState(); } catch {}
+  try {
+    const subs = await store.listSubscribers();
+    const now2 = Date.now();
+    const active = subs.filter((s) => s.isActive && (!s.expiresAt || s.expiresAt.getTime() > now2));
+    revenueSnap = {
+      pro: active.filter((s) => s.plan === "pro").length,
+      elite: active.filter((s) => s.plan === "elite").length,
+      total: active.length,
+    };
+  } catch {}
+  try { activitySnap = await store.listActivity(10); } catch {}
 
   return {
     organism: sentinelStatus.organism,

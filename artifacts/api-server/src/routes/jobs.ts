@@ -5,7 +5,7 @@ import {
   CreateJobLinkBody,
 } from "@workspace/api-zod";
 import {
-  getDemoJobs,
+  fetchFactoryEvents,
   FACTORY_ADDRESS,
   JETTON_FACTORY_ADDRESS,
   DEFAULT_EVALUATOR,
@@ -23,18 +23,14 @@ function filterAndPaginate(
   offset = 0
 ) {
   let filtered = jobs;
-  if (state) {
-    filtered = filtered.filter((j) => j.state === state);
-  }
-  if (type) {
-    filtered = filtered.filter((j) => j.type === type);
-  }
+  if (state) filtered = filtered.filter((j) => j.state === state);
+  if (type)  filtered = filtered.filter((j) => j.type  === type);
   const total = filtered.length;
-  const page = filtered.slice(offset, offset + limit);
+  const page  = filtered.slice(offset, offset + limit);
   return { jobs: page, total, offset, limit };
 }
 
-router.get("/jobs", (req, res) => {
+router.get("/jobs", async (req, res) => {
   const parseResult = ListJobsQueryParams.safeParse(req.query);
   if (!parseResult.success) {
     res.status(400).json({ error: "BadRequest", message: parseResult.error.message });
@@ -42,9 +38,9 @@ router.get("/jobs", (req, res) => {
   }
 
   const { state, type, limit = 20, offset = 0 } = parseResult.data;
-  const allJobs = getDemoJobs();
-  const result = filterAndPaginate(allJobs, state, type, limit, offset);
-  res.json(result);
+  const allJobs = await fetchFactoryEvents(100, 0);
+  const result  = filterAndPaginate(allJobs, state, type, limit, offset);
+  res.json({ ...result, source: allJobs.length > 0 ? "live" : "empty" });
 });
 
 router.get("/jobs/create-link", (req, res) => {
@@ -82,7 +78,7 @@ router.post("/jobs/create-link", (req, res) => {
   });
 });
 
-router.get("/jobs/:address", (req, res) => {
+router.get("/jobs/:address", async (req, res) => {
   const parseResult = GetJobParams.safeParse(req.params);
   if (!parseResult.success) {
     res.status(400).json({ error: "BadRequest", message: parseResult.error.message });
@@ -90,32 +86,11 @@ router.get("/jobs/:address", (req, res) => {
   }
 
   const { address } = parseResult.data;
-  const allJobs = getDemoJobs();
+  const allJobs = await fetchFactoryEvents(100, 0);
   const job = allJobs.find((j) => j.address === address);
 
   if (!job) {
-    const mockJob: Job = {
-      address,
-      jobId: Math.floor(Math.random() * 1000) + 100,
-      state: "OPEN",
-      type: "TON",
-      client: "EQBGhm1xVcMeDKqMpxnTFqkKhS1hfYvBk2m7Lqs2N4GGPQD",
-      provider: null,
-      evaluator: DEFAULT_EVALUATOR,
-      budgetTon: "2",
-      budgetUsdt: null,
-      descriptionHash: "0x" + "a".repeat(64),
-      descriptionText: null,
-      resultHash: null,
-      resultType: null,
-      timeout: 86400,
-      evalTimeout: 86400,
-      createdAt: Math.floor(Date.now() / 1000) - 3600,
-      submittedAt: null,
-      tonviewerUrl: `${TONVIEWER_BASE}/${address}`,
-    };
-    res.json(mockJob);
-    return;
+    return res.status(404).json({ error: "Job not found", address, tonviewerUrl: `${TONVIEWER_BASE}/${address}` });
   }
 
   res.json(job);

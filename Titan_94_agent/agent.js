@@ -746,15 +746,18 @@ class Titan94Agent {
 
         this.loop.start();
 
-        // Graceful shutdown
+        // Graceful shutdown — NEVER exit, just restart cycles
         const shutdown = async (sig) => {
-            console.log(`\n[Boot] Received ${sig} — shutting down gracefully...`);
+            console.log(`\n[Boot] Received ${sig} — restarting cycles (never exiting)...`);
             this.loop.stop();
             if (this.tg.bot) {
-                await this.tg.broadcast("⛔ Titan_94 Agent stopping...").catch(() => {});
-                this.tg.bot.stop(sig);
+                await this.tg.broadcast("🔄 Titan_94 restarting cycles...").catch(() => {});
             }
-            process.exit(0);
+            // Restart loop instead of exiting
+            setTimeout(() => {
+                console.log("[Boot] 🔄 Restarting autonomous loop after signal...");
+                this.loop.start();
+            }, 3000);
         };
         process.once("SIGINT", () => shutdown("SIGINT"));
         process.once("SIGTERM", () => shutdown("SIGTERM"));
@@ -771,8 +774,25 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ═══════════════════════════════════════════════════════════════════════
 // ENTRY POINT
 // ═══════════════════════════════════════════════════════════════════════
-const agent = new Titan94Agent();
-agent.start().catch(err => {
-    console.error("❌ Fatal agent error:", err);
-    process.exit(1);
+// Keep process alive even if there are no active timers
+setInterval(() => {}, 1_000 * 60 * 60).unref();
+
+// Trap unhandled errors — log and restart, NEVER exit
+process.on("uncaughtException", (err) => {
+    console.error("[SHIELD] uncaughtException — staying alive:", err.message);
 });
+process.on("unhandledRejection", (reason) => {
+    console.error("[SHIELD] unhandledRejection — staying alive:", reason);
+});
+
+async function startAgent() {
+    try {
+        const agent = new Titan94Agent();
+        await agent.start();
+    } catch (err) {
+        console.error("❌ Agent start error — retrying in 10s:", err.message);
+        setTimeout(startAgent, 10_000);
+    }
+}
+
+startAgent();
