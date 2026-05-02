@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   Eye, Shield, Brain, DollarSign, Activity, Zap, TrendingUp, Cpu,
-  Radio, Wifi, Database, Bot,
+  Radio, Wifi, Database, Bot, Globe, WifiOff,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -39,6 +39,7 @@ export default function CommandCenter() {
   const { data: revenue }  = usePoll<any>("/monetization/revenue", 15000);
   const { data: vulns }    = usePoll<any>("/vulnerabilities?limit=8", 10000);
   const { data: bot }      = usePoll<any>("/health/bot", 30000);
+  const { data: tonInfra } = usePoll<any>("/ton/infra-status", 60000);
 
   const accuracy = stats?.accuracy ? Number(stats.accuracy) * 100 : 0;
   const uptimeSec = stats?.uptime ? Number(stats.uptime) : 0;
@@ -110,8 +111,53 @@ export default function CommandCenter() {
           <StatusPill icon={Bot}     label="TG-BOT"      ok={!!bot?.online} extra={bot?.online ? "polling" : "no token"} />
           <StatusPill icon={Database} label="POSTGRES"   ok={true} extra="connected" />
           <StatusPill icon={Wifi}    label="HEARTBEAT"   ok={true} extra={`${uptimeH}h ${uptimeM}m`} />
+          {tonInfra && (
+            <StatusPill
+              icon={Globe}
+              label="TON NETWORK"
+              ok={tonInfra.overallStatus === "operational" || tonInfra.overallStatus === "degraded"}
+              extra={`${tonInfra.onlineCount}/${tonInfra.totalCount} up`}
+            />
+          )}
         </div>
       </div>
+
+      {/* === TON NETWORK HEALTH BAR === */}
+      {tonInfra && (
+        <Link href="/ton-network">
+          <div className="mb-5 p-3 rounded border cursor-pointer hover:border-cyan-400/40 transition-all group"
+            style={{
+              borderColor: tonInfra.overallStatus === "operational" ? "rgba(0,255,136,0.25)" : "rgba(255,140,0,0.25)",
+              background: tonInfra.overallStatus === "operational" ? "rgba(0,255,136,0.04)" : "rgba(255,140,0,0.04)",
+            }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4" style={{ color: tonInfra.overallStatus === "operational" ? "#00FF88" : "#FF8C00" }} />
+                <span className="text-xs font-bold tracking-widest" style={{ color: tonInfra.overallStatus === "operational" ? "#00FF88" : "#FF8C00" }}>
+                  TON ECOSYSTEM · {tonInfra.overallStatus?.toUpperCase()}
+                </span>
+              </div>
+              <span className="text-[10px] text-muted group-hover:text-primary transition-colors">
+                {tonInfra.onlineCount}/{tonInfra.totalCount} сервісів · деталі →
+              </span>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {(tonInfra.services || []).map((svc: any) => (
+                <div key={svc.id}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono"
+                  style={{
+                    background: svc.online ? "rgba(0,255,136,0.1)" : "rgba(255,51,85,0.1)",
+                    border: `1px solid ${svc.online ? "rgba(0,255,136,0.2)" : "rgba(255,51,85,0.2)"}`,
+                    color: svc.online ? "#00FF88" : "#FF3355",
+                  }}>
+                  {svc.online ? <Wifi className="w-2.5 h-2.5" /> : <WifiOff className="w-2.5 h-2.5" />}
+                  {svc.label.replace(" Explorer","").replace(" Status","").replace(" Official","").replace(" API","")}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* === KPI MEGA TILES with sparklines === */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -284,12 +330,13 @@ export default function CommandCenter() {
       </div>
 
       {/* === FOOTER QUICK ACTIONS === */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <Link href="/threats" className="titan-card text-center hover:border-amber-500/50 transition py-3"><Shield className="w-4 h-4 mx-auto text-danger" /><div className="text-xs mt-1">Threats</div></Link>
-        <Link href="/builder" className="titan-card text-center hover:border-amber-500/50 transition py-3"><Bot className="w-4 h-4 mx-auto text-amber" /><div className="text-xs mt-1">Agent Forge</div></Link>
-        <Link href="/earn"    className="titan-card text-center hover:border-amber-500/50 transition py-3"><DollarSign className="w-4 h-4 mx-auto text-safe" /><div className="text-xs mt-1">Earnings</div></Link>
-        <Link href="/nexus"   className="titan-card text-center hover:border-amber-500/50 transition py-3"><Brain className="w-4 h-4 mx-auto text-primary" /><div className="text-xs mt-1">NEXUS AI</div></Link>
-        <Link href="/analytics" className="titan-card text-center hover:border-amber-500/50 transition py-3"><Activity className="w-4 h-4 mx-auto text-amber" /><div className="text-xs mt-1">Analytics</div></Link>
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+        <Link href="/threats"     className="titan-card text-center hover:border-amber-500/50 transition py-3"><Shield className="w-4 h-4 mx-auto text-danger" /><div className="text-xs mt-1">Threats</div></Link>
+        <Link href="/builder"     className="titan-card text-center hover:border-amber-500/50 transition py-3"><Bot className="w-4 h-4 mx-auto text-amber" /><div className="text-xs mt-1">Agent Forge</div></Link>
+        <Link href="/earn"        className="titan-card text-center hover:border-amber-500/50 transition py-3"><DollarSign className="w-4 h-4 mx-auto text-safe" /><div className="text-xs mt-1">Earnings</div></Link>
+        <Link href="/nexus"       className="titan-card text-center hover:border-amber-500/50 transition py-3"><Brain className="w-4 h-4 mx-auto text-primary" /><div className="text-xs mt-1">NEXUS AI</div></Link>
+        <Link href="/analytics"   className="titan-card text-center hover:border-amber-500/50 transition py-3"><Activity className="w-4 h-4 mx-auto text-amber" /><div className="text-xs mt-1">Analytics</div></Link>
+        <Link href="/ton-network" className="titan-card text-center hover:border-cyan-500/50 transition py-3"><Globe className="w-4 h-4 mx-auto text-primary" /><div className="text-xs mt-1">TON Net</div></Link>
       </div>
     </div>
   );

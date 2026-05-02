@@ -137,8 +137,20 @@ const DICT: Dict = {
   "nav.jobs":      { uk: "Робочі завдання",  en: "Job Explorer",    ru: "Задания",          de: "Aufgaben",          tr: "Görevler",         zh: "任务列表" },
   "nav.create":    { uk: "Створити завдання",en: "Create Job",      ru: "Создать задание",  de: "Aufgabe erstellen", tr: "Görev Oluştur",    zh: "创建任务" },
   "nav.creator":   { uk: "Творець",          en: "Creator",         ru: "Создатель",        de: "Ersteller",         tr: "Yaratıcı",         zh: "创建者" },
-  "nav.about":     { uk: "Про систему",      en: "About",           ru: "О системе",        de: "Über uns",          tr: "Hakkında",         zh: "关于" },
-  "nav.privacy":   { uk: "Конфіденційність", en: "Privacy Policy",  ru: "Конфиденциальность", de: "Datenschutz",    tr: "Gizlilik",         zh: "隐私政策" },
+  "nav.about":        { uk: "Про систему",       en: "About",              ru: "О системе",             de: "Über uns",             tr: "Hakkında",            zh: "关于" },
+  "nav.privacy":      { uk: "Конфіденційність",  en: "Privacy Policy",     ru: "Конфиденциальность",    de: "Datenschutz",          tr: "Gizlilik",            zh: "隐私政策" },
+  "nav.ton_network":  { uk: "TON Мережа",         en: "TON Network",        ru: "TON Сеть",              de: "TON Netzwerk",         tr: "TON Ağ Durumu",       zh: "TON 网络" },
+
+  "nav.ton_network.desc": {
+    uk: "Живий моніторинг здоров'я TON блокчейну. Перевіряє доступність: tonstat.us, TonCenter API, validators.ton.org, TONScan, TONViewer. Показує затримку та статус кожного сервісу. Містить повну бібліотеку посилань на документацію та ресурси TON екосистеми.",
+    en: "Live TON blockchain health monitoring. Checks availability of: tonstat.us, TonCenter API, validators.ton.org, TONScan, TONViewer. Shows latency and status for each service. Includes full library of TON ecosystem documentation and resource links.",
+    ru: "Живой мониторинг здоровья TON блокчейна. Проверяет доступность: tonstat.us, TonCenter API, validators.ton.org, TONScan, TONViewer. Показывает задержку и статус каждого сервиса. Содержит полную библиотеку ссылок на документацию TON экосистемы.",
+  },
+  "nav.ton_network.instr": {
+    uk: "Сторінка оновлюється кожні 60 секунд. Зелений — сервіс онлайн. Червоний — недоступний (можлива проблема в мережі). Telegram-канали @tonstatus і @testnetstatus надсилають алерти validators. Бібліотека посилань містить офіційну документацію TON — корисно для розробників і дослідників.",
+    en: "Page refreshes every 60 seconds. Green = service online. Red = unreachable (possible network issue). Telegram channels @tonstatus and @testnetstatus send validator alerts. Documentation library contains official TON docs — useful for developers and researchers.",
+    ru: "Страница обновляется каждые 60 секунд. Зелёный — сервис онлайн. Красный — недоступен (возможна проблема в сети). Telegram-каналы @tonstatus и @testnetstatus отправляют алерты validators. Библиотека ссылок содержит официальную документацию TON.",
+  },
 
   // ── Nav descriptions (shown in info modal) ─────────────────────────
   "nav.command.desc": {
