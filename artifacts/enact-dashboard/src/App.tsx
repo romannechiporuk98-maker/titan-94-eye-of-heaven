@@ -32,6 +32,7 @@ import AccessPage from "@/pages/access";
 import AboutPage from "@/pages/about";
 import PrivacyPage from "@/pages/privacy";
 import TonNetworkPage from "@/pages/ton-network";
+import GrantPage from "@/pages/grant";
 import { Splash } from "@/components/splash";
 import { DevModeOverlay } from "@/components/dev-mode";
 
@@ -64,6 +65,7 @@ function Router() {
         <Route path="/about"          component={AboutPage}     />
         <Route path="/privacy"        component={PrivacyPage}   />
         <Route path="/ton-network"    component={TonNetworkPage}/>
+        <Route path="/grant"          component={GrantPage}      />
         <Route path="/enact"          component={Home}          />
         <Route path="/jobs"           component={Jobs}          />
         <Route path="/jobs/:address"  component={JobDetail}     />

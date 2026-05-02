@@ -27,6 +27,7 @@ import mirrorRouter        from "./mirror";
 import vaultRouter         from "./vault";
 import binanceRouter       from "./binance";
 import tonInfraRouter      from "./ton-infra";
+import nexusModelsRouter   from "./nexus-models";
 
 const router: IRouter = Router();
 
@@ -58,5 +59,6 @@ router.use(mirrorRouter);
 router.use(vaultRouter);
 router.use(binanceRouter);
 router.use(tonInfraRouter);
+router.use(nexusModelsRouter);
 
 export default router;

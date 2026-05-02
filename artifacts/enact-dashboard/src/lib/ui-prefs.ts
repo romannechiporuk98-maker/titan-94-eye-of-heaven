@@ -139,6 +139,7 @@ const DICT: Dict = {
   "nav.creator":   { uk: "Творець",          en: "Creator",         ru: "Создатель",        de: "Ersteller",         tr: "Yaratıcı",         zh: "创建者" },
   "nav.about":        { uk: "Про систему",       en: "About",              ru: "О системе",             de: "Über uns",             tr: "Hakkında",            zh: "关于" },
   "nav.privacy":      { uk: "Конфіденційність",  en: "Privacy Policy",     ru: "Конфиденциальность",    de: "Datenschutz",          tr: "Gizlilik",            zh: "隐私政策" },
+  "nav.grant":        { uk: "Грант TON",            en: "TON Grant",          ru: "Грант TON",             de: "TON-Förderung",        tr: "TON Hibesi",          zh: "TON 资助" },
   "nav.ton_network":  { uk: "TON Мережа",         en: "TON Network",        ru: "TON Сеть",              de: "TON Netzwerk",         tr: "TON Ağ Durumu",       zh: "TON 网络" },
 
   "nav.ton_network.desc": {
