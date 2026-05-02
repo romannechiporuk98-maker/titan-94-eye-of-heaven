@@ -19,6 +19,27 @@
   "reserveAddress": "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v",
   "developerApiQuotaPerDay": 10000,
   "developerCustomEnabled": true,
-  "updatedAt": "2026-04-29T13:11:16.866Z",
+  "navVisibility": {
+    "/": true,
+    "/threats": true,
+    "/contracts": true,
+    "/analyze": true,
+    "/evolution": true,
+    "/immune": true,
+    "/analytics": true,
+    "/status": true,
+    "/earn": true,
+    "/autotrade": false,
+    "/builder": true,
+    "/developer": false,
+    "/nexus": true,
+    "/settings": false,
+    "/vault": false,
+    "/access": true,
+    "/enact": false,
+    "/jobs": false,
+    "/create": false
+  },
+  "updatedAt": "2026-05-01T23:41:19.361Z",
   "updatedBy": "creator:7255058720"
 }

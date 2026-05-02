@@ -14,7 +14,7 @@
   "orientation": "portrait",
   "categories": ["productivity", "finance", "developer-tools"],
   "screenshots": [
-    { "src": "/opengraph.jpg", "type": "image/jpeg", "sizes": "1200x630" }
+    { "src": "https://titan-94.replit.app/opengraph.jpg", "type": "image/jpeg", "sizes": "1200x630" }
   ],
   "ton_payments": true,
   "telegram_stars": true,

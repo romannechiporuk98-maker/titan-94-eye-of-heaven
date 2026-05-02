@@ -1,6 +1,6 @@
 # TITAN-94 «ОКО НЕБЕСНЕ» — Project Konspekt
 
-> Останнє оновлення: 2026-05-01
+> Останнє оновлення: 2026-05-02
 
 ---
 
@@ -469,9 +469,254 @@ pnpm --filter @workspace/api-server run build
 | `artifacts/api-server/src/lib/ton.ts` | TONAPI/TonCenter клієнт, fetchFactoryEvents |
 | `artifacts/enact-dashboard/src/lib/ui-prefs.ts` | DICT перекладів (uk/en/ru), хуки теми/мови/TZ |
 | `artifacts/enact-dashboard/src/lib/telegram.ts` | getTgUser(), isCreator(), haptic(), DEV ?_dev_tg |
+| `artifacts/enact-dashboard/src/lib/tonconnect.ts` | buildPaymentTx(), RESERVE_WALLET, shortAddr(), formatTon() |
 | `artifacts/enact-dashboard/src/components/layout.tsx` | Sidebar, NAV_ITEMS (export), nav visibility, InfoModal |
 | `artifacts/enact-dashboard/src/components/dev-mode.tsx` | DEV MODE банер (тільки поза Telegram) |
+| `artifacts/enact-dashboard/src/components/splash.tsx` | Перший запуск — анімований splash (localStorage titan94.splash.seen) |
 | `artifacts/enact-dashboard/src/pages/creator.tsx` | Creator panel (7 вкладок, Menu tab) |
+| `artifacts/enact-dashboard/public/tonconnect-manifest.json` | TonConnect 2.0 manifest |
+| `artifacts/enact-dashboard/public/tma-manifest.json` | Telegram Mini App manifest (Web App Schema) |
 | `Titan_94_agent/agent.js` | Автономний агент, never-exit |
 | `lib/db/src/schema.ts` | Drizzle ORM схема всіх 11 таблиць |
 | `.titan-creator-settings.json` | Персистований JSON з CreatorSettings |
+
+---
+
+## TMA (Telegram Mini App) — Повний аудит
+
+### `telegram.ts` — ядро інтеграції
+
+**Місце:** `artifacts/enact-dashboard/src/lib/telegram.ts`
+
+#### Ініціалізація (`initTelegram()`)
+
+```
+1. Перевіряє кеш → повертає cached якщо є
+2. Читає URL параметр ?_dev_tg=<id> (DEV режим, тільки в браузері)
+3. window.Telegram?.WebApp — реальний TMA SDK
+4. wa.ready() + wa.expand() + wa.requestFullscreen() (TG 8.0+)
+5. wa.setHeaderColor / setBackgroundColor / setBottomBarColor → #060F1A
+6. wa.enableClosingConfirmation() + wa.disableVerticalSwipes()
+7. Читає initDataUnsafe.user → TgUser { id, name, username, isReal: true }
+8. Fallback → DEMO { id: "demo_user", isReal: false }
+```
+
+#### Кешування — ВАЖЛИВА ДЕТАЛЬ
+
+```typescript
+let cached: TgUser | null = null;  // модульний singleton
+```
+
+- Ініціалізується **один раз** при першому виклику `initTelegram()` або `getTgUser()`
+- При SPA-навігації (wouter) кеш НЕ скидається → `getTgUser()` завжди повертає того ж юзера
+- `useMemo(() => getTgUser(), [])` у компонентах — правильний патерн
+- `?_dev_tg` читається тільки при **повному перезавантаженні** сторінки, не при навігації
+- Саме тому `DevModeOverlay` і Vault використовують `window.location.href = ...` (hard reload) при зміні ролі
+
+#### Функції TMA SDK
+
+| Функція | WebApp API | Fallback |
+|---|---|---|
+| `haptic(kind)` | `HapticFeedback.notificationOccurred/impactOccurred` | тихо ігнорується |
+| `showBackButton(handler)` | `BackButton.show/onClick/offClick/hide` | `() => {}` |
+| `showMainButton(text, handler)` | `MainButton.setText/show/onClick` | `() => {}` |
+| `cloudStorage.set/get/delete` | `CloudStorage.setItem/getItem/removeItem` | `false/null` |
+| `openTelegramLink(url)` | `wa.openTelegramLink(url)` | `window.open(url, "_blank")` |
+| `openLink(url)` | `wa.openLink(url, opts)` | `window.open(url, "_blank")` |
+| `openInvoice(url, cb)` | `wa.openInvoice(url, cb)` | тихо |
+| `shareToStory(mediaUrl)` | `wa.shareToStory(mediaUrl, opts)` | тихо |
+| `getTgTheme()` | `wa.themeParams` | константи `#060F1A/#CFFFFF` |
+
+#### Creator IDs (синхронізовано з бекендом)
+
+```typescript
+// frontend: artifacts/enact-dashboard/src/lib/telegram.ts
+const CREATOR_IDS = new Set(["7255058720"]);
+
+// backend: artifacts/api-server/src/services/creator.ts
+const HARDCODED_CREATORS = ["7255058720"];
+```
+
+**Правило:** якщо додаєш нового creator — зміни в ОБОХ місцях.
+
+#### `tgHeaders()` — авторизація API
+
+Всі API-виклики, що потребують auth, мають передавати:
+```typescript
+import { tgHeaders } from "@/lib/telegram";
+// headers: { "x-telegram-id": "...", "x-tg-init-data": "..." }
+```
+
+Бекенд перевіряє `x-telegram-id` для creator-endpoints. `x-tg-init-data` — для майбутньої HMAC-верифікації (поки не активована).
+
+---
+
+### TMA маніфест — `public/tma-manifest.json`
+
+| Поле | Значення | Статус |
+|---|---|---|
+| `url` / `start_url` | `https://titan-94.replit.app/` | ✅ абсолютний |
+| `icon` | `https://titan-94.replit.app/favicon.svg` | ✅ абсолютний |
+| `screenshots[0].src` | `https://titan-94.replit.app/opengraph.jpg` | ✅ виправлено (було відносний `/opengraph.jpg`) |
+| `ton_connect_manifest_url` | `https://titan-94.replit.app/tonconnect-manifest.json` | ✅ |
+| `permissions` | telegram-mini-app, telegram-stars, ton-connect, haptic-feedback, cloud-storage, biometric-manager, main-button, back-button | ✅ |
+| `developer.telegram_id` | `7255058720` | ✅ |
+
+---
+
+### Splash Screen — `components/splash.tsx`
+
+- Показується **один раз** — зберігає `titan94.splash.seen` в localStorage
+- `?splash=1` → примусовий показ; `?splash=0` → вимкнений
+- Автоматично пропускається на `/settings`, `/protocol-94`, `/vault`, `/access`, `/creator`, `/developer`, `/builder`
+- Auto-dismiss: 4.5s fade-out + 5.2s unmount
+
+---
+
+## TonConnect 2.0 — Повний аудит
+
+### Архітектура
+
+```
+App.tsx
+  └── TonConnectUIProvider (manifestUrl = window.origin + BASE + "/tonconnect-manifest.json")
+        ├── earn.tsx — TON subscription payments (pro/elite)
+        └── developer.tsx — arbitrary TON transactions
+```
+
+### `tonconnect.ts` — утиліти
+
+**Місце:** `artifacts/enact-dashboard/src/lib/tonconnect.ts`
+
+```typescript
+export const RESERVE_WALLET = "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v";
+
+export function buildPaymentTx(plan: "pro" | "elite", _telegramId: string): PaymentTx
+// → { validUntil: now+600s, messages: [{ address: RESERVE_WALLET, amount: "5000000000" | "20000000000" }] }
+
+export function formatTon(nano: string | number, decimals = 4): string
+export function shortAddr(addr?: string | null, prefix = 6, suffix = 4): string
+```
+
+#### Дизайнове рішення: транзакція БЕЗ коментаря
+
+```typescript
+// payload навмисно опущений!
+messages: [{ address: RESERVE_WALLET, amount: String(amount * 1e9) }]
+```
+
+**Чому:** TON Connect вимагає `payload` як base64-encoded BoC cell. Без спеціальної бібліотеки (`@ton/core`) генерація коректного BoC у браузері нетривіальна.
+
+**Як бекенд ідентифікує платіж (ton-poller):**
+1. Сканує вхідні tx Reserve wallet через TonCenter API
+2. Збігає за парою `(from_address, amount_nano)`:
+   - `5_000_000_000` → plan `pro`
+   - `20_000_000_000` → plan `elite`
+3. Фронт додатково надсилає `POST /api/webhook/ton-payment` з `{ telegramId, txHash, plan }` одразу після підписання tx
+4. Бекенд верифікує txHash on-chain і активує план
+
+**Ризик:** якщо юзер вручну надішле 5 TON на Reserve wallet — може збігтись. Низький ризик (потрібна точна сума + активний ton-poller).
+
+**Наступний крок (TODO):** додати payload через `@ton/core` — comment = `TITAN94_<telegramId>_<plan>` для надійної ідентифікації.
+
+### TonConnect маніфест — `public/tonconnect-manifest.json`
+
+| Поле | Значення | Примітка |
+|---|---|---|
+| `url` | `https://titan-94.replit.app` | Базовий домен |
+| `name` | `TITAN-94 ОКО НЕБЕСНЕ` | |
+| `iconUrl` | `https://titan-94.replit.app/favicon.svg` | Абсолютний URL — обов'язковий для TonConnect |
+
+**Критично:** `iconUrl` МАЄ бути абсолютним URL, інакше TonConnect відхиляє маніфест.
+
+### `manifestUrl` в `App.tsx`
+
+```typescript
+// Завжди абсолютний URL — TonConnect відкидає відносні шляхи
+const manifestUrl = typeof window !== "undefined"
+  ? `${window.location.origin}${base}/tonconnect-manifest.json`
+  : "/tonconnect-manifest.json";
+```
+
+SSR-fallback (`"/tonconnect-manifest.json"`) — безпечний, бо React рендеряться тільки в браузері.
+
+### Платіжний флоу `earn.tsx`
+
+```
+1. getTgUser() → tg.id
+2. useTonAddress() → підключена адреса гаманця
+3. Вибір плану → кнопка "ПІДКЛЮЧИТИ ГАМАНЕЦЬ" → TonConnectButton (якщо не підключено)
+4. Кнопка "ОПЛАТИТИ X TON" → sendTransaction(buildPaymentTx(plan, tg.id))
+5. onSuccess → POST /api/webhook/ton-payment { telegramId, txHash, plan, walletAddress }
+6. Хук usePoll("/billing/balance/tg.id", 10s) — автооновлення балансу
+7. usePoll("/monetization/status/tg.id", 30s) — статус підписки
+```
+
+**RESERVE_WALLET** — єдиний в проєкті, імпортується з `tonconnect.ts` (раніше дублювався в `earn.tsx` — виправлено).
+
+### Платіжний флоу `developer.tsx`
+
+Аналогічна структура, але:
+- Довільна сума (не фіксована)
+- Адреса отримувача вводиться вручну або з конфігу
+- Призначений для Creator/Developer testing
+
+### `access.tsx` — сторінка тарифів (виправлено)
+
+| Баг | Проблема | Виправлення |
+|---|---|---|
+| `/billing` route | Маршрут не існував в App.tsx | → `/earn?tier=<id>&mode=<mode>` |
+| Root-relative URL | `window.location.href = '/billing?...'` ламається при BASE_PATH | → `BASE_URL + '/earn?...'` |
+| Бот `Titan94Bot` | Неправильне ім'я бота (Stars payment deeplink) | → `Titan_94_agent_bot` |
+| CTA `<Link href="/billing">` | Мертве посилання | → `<Link href="/earn">` |
+| Bottom CTA Stars | `Titan94Bot?start=tiers` | → `Titan_94_agent_bot?start=tiers` |
+| Stars yearly price | Фіксована кількість зірок незалежно від mode | → `mode === "yearly" ? Math.round(stars*12*0.8) : stars` |
+
+---
+
+## Бот Telegram — Правильні usernames
+
+| Бот | Username | Призначення |
+|---|---|---|
+| Основний агент | `Titan_94_agent_bot` | Stars deeplinks, рефералки, команди |
+| *(не існує)* | `Titan94Bot` | Не використовується — виправлено в access.tsx |
+
+**Правило:** всі `t.me/` посилання використовують `Titan_94_agent_bot`.
+
+---
+
+## Splash пропускається (захард-кожено у `splash.tsx`)
+
+```typescript
+// Ці шляхи скіпають splash автоматично:
+/(settings|protocol-94|vault|access|creator|developer|builder)/i
+```
+
+Тобто creator щоразу відкриває `/vault` або `/settings` — не побачить splash. Коректна поведінка.
+
+---
+
+## Vite конфіг — особливості
+
+**Місце:** `artifacts/enact-dashboard/vite.config.ts`
+
+- `PORT` — обов'язковий env var (кидає Error якщо немає)
+- `BASE_PATH` — обов'язковий env var (кидає Error якщо немає)
+- `server.allowedHosts: true` — Replit proxy (iframe) вимагає
+- `server.proxy["/api"]` → `http://localhost:8080` — dev-only проксі до API сервера
+- `resolve.alias["@"]` → `src/` — резолвиться Vite (не tsc)
+- `resolve.dedupe: ["react", "react-dom"]` — уникнення подвійного React з TonConnect
+
+**Важливо:** `tsc --noEmit` показує помилки `@/` імпортів — це хибні спрацювання. Vite резолвить їх сам через alias. Довіряй `pnpm run typecheck`, не LSP.
+
+---
+
+## Відомі обмеження / TODO
+
+| # | Компонент | Опис |
+|---|---|---|
+| 1 | `tonconnect.ts` | `buildPaymentTx` не кодує BoC payload з коментарем. Матчинг платежу за `(address, amount)` — fragile. **TODO:** додати `@ton/core` comment cell |
+| 2 | `developer.tsx` | Транзакція без on-chain comment — ідентифікація тільки через webhook |
+| 3 | `telegram.ts` | HMAC-верифікація `x-tg-init-data` підготовлена (поле присутнє) але не активована на бекенді |
+| 4 | `telegram.ts` | `requestFullscreen()` — TG 8.0+. Обгорнутий у try/catch, тихо ігнорується на старших версіях |
+| 5 | `earn.tsx` | Після оплати через Stars (не TonConnect) — юзер перенаправляється у бот. Немає автоактивації з фронту — лише ton-poller або ручне видання |

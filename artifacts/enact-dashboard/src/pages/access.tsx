@@ -173,18 +173,21 @@ export default function AccessPage() {
 
   const visible = TIERS.filter((t) => !t.hidden || showDev);
 
+  const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
   function pay(tier: Tier, method: "ton" | "stars") {
     haptic("medium");
     if (tier.ton === 0) {
-      window.location.href = "/";
+      window.location.href = BASE_URL + "/";
       return;
     }
     if (method === "ton") {
-      // Hand off to TON Connect flow on /billing
-      window.location.href = `/billing?tier=${tier.id}&mode=${mode}`;
+      // Earn page has the full TON Connect payment flow
+      window.location.href = BASE_URL + `/earn?tier=${tier.id}&mode=${mode}`;
     } else {
       // Telegram Stars → bot deeplink (works inside TG)
-      const link = `https://t.me/Titan94Bot?start=stars_${tier.id}_${tier.stars}`;
+      const starsCount = mode === "yearly" ? Math.round(tier.stars * 12 * 0.8) : tier.stars;
+      const link = `https://t.me/Titan_94_agent_bot?start=stars_${tier.id}_${starsCount}`;
       openTelegramLink(link);
     }
   }
@@ -336,11 +339,11 @@ export default function AccessPage() {
         <h3 className="text-2xl sm:text-3xl font-bold mb-3">Один організм. Три рівні. Нескінченна еволюція.</h3>
         <p className="text-sm mb-6" style={{ color: "rgba(207,255,255,0.6)" }}>Скасувати можна будь-якої миті · Refund 7 днів · Custody = твоя</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link href="/billing" className="px-6 py-3 font-bold tracking-widest border inline-flex items-center gap-2"
+          <Link href="/earn" className="px-6 py-3 font-bold tracking-widest border inline-flex items-center gap-2"
             style={{ borderColor: "#00FFFF", color: "#00FFFF", background: "rgba(0,255,255,0.08)" }}>
             ОПЛАТИТИ В TON <ArrowRight className="w-4 h-4" />
           </Link>
-          <button onClick={() => openTelegramLink("https://t.me/Titan94Bot?start=tiers")}
+          <button onClick={() => openTelegramLink("https://t.me/Titan_94_agent_bot?start=tiers")}
             className="px-6 py-3 font-bold tracking-widest border inline-flex items-center gap-2"
             style={{ borderColor: "#FFD43A", color: "#FFD43A", background: "rgba(255,212,58,0.08)" }}>
             <Star className="w-4 h-4" /> ОПЛАТИТИ TG STARS

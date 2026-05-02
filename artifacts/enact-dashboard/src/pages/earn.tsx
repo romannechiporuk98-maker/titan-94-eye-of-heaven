@@ -7,7 +7,7 @@ import {
 import { TonConnectButton, useTonAddress, useTonConnectUI } from "@tonconnect/ui-react";
 import { useToast } from "@/hooks/use-toast";
 import { getTgUser, haptic } from "@/lib/telegram";
-import { buildPaymentTx, shortAddr } from "@/lib/tonconnect";
+import { buildPaymentTx, shortAddr, RESERVE_WALLET } from "@/lib/tonconnect";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (path: string) => `${BASE}/api${path}`;
@@ -20,8 +20,6 @@ function usePoll(path: string | null, ms = 10000) {
     enabled: !!path,
   });
 }
-
-const RESERVE_WALLET = "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v";
 
 export default function EarnPage() {
   const { toast } = useToast();
