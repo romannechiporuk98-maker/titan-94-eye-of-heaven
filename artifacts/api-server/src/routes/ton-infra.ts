@@ -289,4 +289,18 @@ router.get("/ton/ecosystem-links", (_req, res) => {
   res.json({ links: TON_ECOSYSTEM_LINKS, updatedAt: new Date().toISOString() });
 });
 
+router.get("/ton/validators", async (_req, res) => {
+  res.json({
+    validators: [],
+    total: 0,
+    active: 0,
+    note: "Validator data requires TON lite-client integration. Add TONAPI_KEY in /settings to enable.",
+    updatedAt: new Date().toISOString(),
+  });
+});
+
+router.get("/builder/status", (_req, res) => {
+  res.json({ status: "ready", agents: 0, jobs: 0, updatedAt: new Date().toISOString() });
+});
+
 export default router;

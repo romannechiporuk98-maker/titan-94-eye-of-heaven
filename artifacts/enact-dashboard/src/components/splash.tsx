@@ -153,9 +153,25 @@ export function Splash() {
                 );
               })}
             </div>
-            <div className="text-[10px] text-muted/50 tracking-widest">
+            <div className="text-[10px] text-muted/50 tracking-widest mb-3">
               auto-select in 8s · click to choose
             </div>
+            <button
+              onClick={() => { setPhase("exit"); setTimeout(() => setVisible(false), 700); }}
+              style={{
+                fontSize: 10,
+                color: "rgba(255,255,255,0.28)",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.1)",
+                padding: "4px 14px",
+                cursor: "pointer",
+                letterSpacing: "0.2em",
+                fontFamily: "'Space Mono', monospace",
+                borderRadius: 2,
+              }}
+            >
+              SKIP →
+            </button>
           </div>
         )}
 

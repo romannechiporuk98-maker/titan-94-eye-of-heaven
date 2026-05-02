@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -7,6 +7,7 @@ import {
   TrendingUp, DollarSign, Shield, Zap, BarChart3, LayoutDashboard,
   MenuSquare, Info, BookOpen, ToggleLeft, ToggleRight,
   Wallet, FileText, Copy, ExternalLink, RefreshCw, ArrowUpRight,
+  Wrench, AlertTriangle, CheckCircle2, Clock, ClipboardList, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -43,7 +44,7 @@ export default function CreatorPage() {
   const { toast } = useToast();
   const { lang } = useLang();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"dashboard" | "ai" | "reserve" | "grant" | "settings" | "menu" | "users" | "terminal" | "broadcast">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "ai" | "reserve" | "grant" | "settings" | "menu" | "users" | "terminal" | "broadcast" | "diagnostics">("dashboard");
   const [reveal, setReveal] = useState(false);
 
   useEffect(() => {
@@ -67,15 +68,16 @@ export default function CreatorPage() {
   }
 
   const tabs = [
-    { k: "dashboard", tkey: "creator.tab.dashboard", i: LayoutDashboard },
-    { k: "ai",        tkey: "creator.tab.ai",        i: Bot },
-    { k: "reserve",   tkey: "creator.tab.reserve",   i: Wallet },
-    { k: "grant",     tkey: "creator.tab.grant",     i: FileText },
-    { k: "settings",  tkey: "creator.tab.settings",  i: SettingsIcon },
-    { k: "menu",      tkey: "creator.tab.menu",      i: MenuSquare },
-    { k: "users",     tkey: "creator.tab.users",     i: Users },
-    { k: "terminal",  tkey: "creator.tab.terminal",  i: Terminal },
-    { k: "broadcast", tkey: "creator.tab.broadcast", i: Send },
+    { k: "dashboard",   tkey: "creator.tab.dashboard",   i: LayoutDashboard },
+    { k: "diagnostics", tkey: "creator.tab.diagnostics", i: Wrench },
+    { k: "ai",          tkey: "creator.tab.ai",          i: Bot },
+    { k: "reserve",     tkey: "creator.tab.reserve",     i: Wallet },
+    { k: "grant",       tkey: "creator.tab.grant",       i: FileText },
+    { k: "settings",    tkey: "creator.tab.settings",    i: SettingsIcon },
+    { k: "menu",        tkey: "creator.tab.menu",        i: MenuSquare },
+    { k: "users",       tkey: "creator.tab.users",       i: Users },
+    { k: "terminal",    tkey: "creator.tab.terminal",    i: Terminal },
+    { k: "broadcast",   tkey: "creator.tab.broadcast",   i: Send },
   ];
 
   return (
@@ -123,8 +125,9 @@ export default function CreatorPage() {
       {tab === "settings"  && <SettingsTab tgId={auth.tgId} qc={qc} toast={toast} lang={lang} />}
       {tab === "menu"      && <MenuTab tgId={auth.tgId} toast={toast} qc={qc} lang={lang} />}
       {tab === "users"     && <UsersTab tgId={auth.tgId} reveal={reveal} toast={toast} qc={qc} lang={lang} />}
-      {tab === "terminal"  && <TerminalTab tgId={auth.tgId} lang={lang} />}
-      {tab === "broadcast" && <BroadcastTab tgId={auth.tgId} toast={toast} lang={lang} />}
+      {tab === "terminal"    && <TerminalTab tgId={auth.tgId} lang={lang} />}
+      {tab === "broadcast"   && <BroadcastTab tgId={auth.tgId} toast={toast} lang={lang} />}
+      {tab === "diagnostics" && <DiagnosticsTab tgId={auth.tgId} lang={lang} toast={toast} />}
     </div>
   );
 }
@@ -1178,5 +1181,343 @@ function BroadcastTab({ tgId, toast, lang }: { tgId: string; toast: any; lang: s
         {S(`НАДІСЛАТИ ${plan.toUpperCase()} ПІДПИСНИКАМ`, `ОТПРАВИТЬ ${plan.toUpperCase()} ПОДПИСЧИКАМ`, `SEND TO ${plan.toUpperCase()} SUBSCRIBERS`)}
       </button>
     </form>
+  );
+}
+
+// ─────────────────── DIAGNOSTICS ───────────────────
+interface EndpointDef {
+  module: string;
+  path: string;
+  method: "GET" | "POST";
+  desc: string;
+  testId?: string;
+  body?: string;
+  pages: string[];
+  fix: string | null;
+}
+
+const ENDPOINT_CATALOG: EndpointDef[] = [
+  // CORE
+  { module: "Core",       path: "/api/healthz",                    method: "GET",  desc: "API health check",             pages: ["Всі"],             fix: null },
+  // AGENT
+  { module: "Agent",      path: "/api/agent/stats",                method: "GET",  desc: "Agent statistics & uptime",    pages: ["Command Center"],  fix: null },
+  { module: "Agent",      path: "/api/agent/cycles",               method: "GET",  desc: "Agent cycles (scan/heal/learn)", pages: ["Command Center"], fix: null },
+  { module: "Agent",      path: "/api/activity?limit=5",           method: "GET",  desc: "Global activity feed",         pages: ["Status"],          fix: null },
+  { module: "Agent",      path: "/api/agent/activity",             method: "GET",  desc: "Agent-specific activity",      pages: [],
+    fix: "Додати до activityRouter.ts:\nrouter.get(\"/agent/activity\", async (req, res) => {\n  const acts = await db.select()...;\n  res.json({ items: acts });\n});" },
+  // TON
+  { module: "TON Network", path: "/api/ton/chain-stats",           method: "GET",  desc: "TON chain live stats",         pages: ["TON Network","Status"], fix: null },
+  { module: "TON Network", path: "/api/ton/infra-status",          method: "GET",  desc: "TON infra nodes status",       pages: ["TON Network"],     fix: null },
+  { module: "TON Network", path: "/api/ton/validators",            method: "GET",  desc: "TON validator list",           pages: ["TON Network"],
+    fix: "Додати до ton-infra.ts:\nrouter.get(\"/ton/validators\", async (req, res) => {\n  res.json({ validators: [], total: 0, active: 0 });\n});" },
+  // SECURITY
+  { module: "Security",   path: "/api/vulnerabilities?limit=3",    method: "GET",  desc: "Vulnerability scanner results", pages: ["Threats","Cmd Center"], fix: null },
+  // NEXUS AI
+  { module: "Nexus AI",   path: "/api/nexus/models",               method: "GET",  desc: "Available AI models catalog",  pages: ["Neural Hub"],      fix: null },
+  { module: "Nexus AI",   path: "/api/nexus/status",               method: "GET",  desc: "Nexus system status",          pages: ["Neural Hub"],      fix: null },
+  { module: "Nexus AI",   path: "/api/nexus/orchestra",            method: "POST", desc: "Multi-AI orchestration (needs keys)", body: '{"prompt":"ping","mode":"general"}', pages: ["Neural Hub"],
+    fix: "Endpoint існує але повертає помилку якщо API ключі відсутні.\nФікс: Перейди в Settings → додай GEMINI_API_KEY або OPENAI_API_KEY." },
+  { module: "Nexus AI",   path: "/api/nexus/generate-model",       method: "POST", desc: "Single AI model generation",   body: '{"prompt":"ping","modelId":"gemini-flash"}', pages: ["Neural Hub"],
+    fix: "Потрібен GEMINI_API_KEY для gemini-flash або OPENAI_API_KEY для GPT моделей.\nФікс: Перейди в /settings → додай ключ відповідної моделі." },
+  // ANALYTICS
+  { module: "Analytics",  path: "/api/dashboard/chart",            method: "GET",  desc: "24h activity chart data",      pages: ["Analytics"],       fix: null },
+  { module: "Analytics",  path: "/api/dashboard/summary",          method: "GET",  desc: "Dashboard KPI summary",        pages: ["Analytics"],       fix: null },
+  { module: "Analytics",  path: "/api/arbitrage",                  method: "GET",  desc: "Arbitrage opportunities",      pages: ["Analytics"],       fix: null },
+  // EVOLUTION
+  { module: "Evolution",  path: "/api/ai-evolution/status",        method: "GET",  desc: "AI evolution stage & metrics", pages: ["Evolution"],       fix: null },
+  { module: "Evolution",  path: "/api/ai-evolution/knowledge?limit=10", method: "GET", desc: "AI knowledge base patterns", pages: ["Evolution"],     fix: null },
+  // EARN
+  { module: "Earn",       path: "/api/billing/auto-earn/stats",    method: "GET",  desc: "Auto-earn global stats",       pages: ["Earnings"],        fix: null },
+  { module: "Earn",       path: "/api/billing/balance/7255058720", method: "GET",  desc: "User TON balance",             pages: ["Earnings","Creator"], fix: null },
+  { module: "Earn",       path: "/api/auth/referrals/7255058720",  method: "GET",  desc: "Referral chain",               pages: ["Earnings"],        fix: null },
+  // AUTOTRADE
+  { module: "AutoTrade",  path: "/api/autotrade/meta",             method: "GET",  desc: "AutoTrade plan metadata",      pages: ["AutoTrade"],       fix: null },
+  { module: "AutoTrade",  path: "/api/autotrade/price",            method: "GET",  desc: "Live TON/USDT price",          pages: ["AutoTrade"],       fix: null },
+  { module: "AutoTrade",  path: "/api/autotrade/stats",            method: "GET",  desc: "AutoTrade statistics",         pages: ["AutoTrade"],       fix: null },
+  // VAULT
+  { module: "Vault",      path: "/api/vault/status",               method: "GET",  desc: "Vault overview",               pages: ["Vault"],           fix: null },
+  // AUTH / DEV
+  { module: "Auth",       path: "/api/auth/status/7255058720",     method: "GET",  desc: "Auth + subscription status",   pages: ["Всі"],             fix: null },
+  { module: "Developer",  path: "/api/developer/info",             method: "GET",  desc: "Developer plan info",          pages: ["Developer"],       fix: null },
+  { module: "Developer",  path: "/api/developer/status/7255058720",method: "GET",  desc: "Developer membership status",  pages: ["Developer"],       fix: null },
+  // CREATOR
+  { module: "Creator",    path: "/api/creator/public-settings",    method: "GET",  desc: "Public nav & creator settings", pages: ["Всі"],            fix: null },
+  { module: "Creator",    path: "/api/creator/dashboard",          method: "GET",  desc: "Creator control panel data",   pages: ["Creator"],
+    fix: "Endpoint існує але потребує x-telegram-id header.\nПеревір що header надсилається коректно." },
+  // BUILDER
+  { module: "Builder",    path: "/api/builder/status",             method: "GET",  desc: "Agent Forge status",           pages: ["Agent Forge"],
+    fix: "Endpoint не існує. Додати до нового router або builder.ts:\nrouter.get(\"/builder/status\", (req, res) => res.json({ status: \"ready\", agents: 0, jobs: 0 }));" },
+];
+
+const MODULE_ORDER = ["Core","Agent","TON Network","Security","Nexus AI","Analytics","Evolution","Earn","AutoTrade","Vault","Auth","Developer","Creator","Builder"];
+
+type CheckResult = { status: "ok" | "fail" | "warn" | "pending"; code: number | null; ms: number | null; error?: string };
+
+function DiagnosticsTab({ tgId, lang, toast }: { tgId: string; lang: string; toast: any }) {
+  const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const S = (uk: string, ru: string, en: string) => lang === "uk" ? uk : lang === "ru" ? ru : en;
+
+  const [results, setResults]       = useState<Record<string, CheckResult>>({});
+  const [running, setRunning]       = useState(false);
+  const [lastRun, setLastRun]       = useState<Date | null>(null);
+  const [expanded, setExpanded]     = useState<Record<string, boolean>>({});
+  const [copied, setCopied]         = useState(false);
+  const [collapsedMods, setCollapsedMods] = useState<Record<string, boolean>>({});
+
+  const runChecks = useCallback(async () => {
+    setRunning(true);
+    const fresh: Record<string, CheckResult> = {};
+    const checks = ENDPOINT_CATALOG.map(async (ep) => {
+      const url = `${BASE_URL}${ep.path}`;
+      const t0 = Date.now();
+      try {
+        const opts: RequestInit = {
+          method: ep.method,
+          headers: { "Content-Type": "application/json", "x-telegram-id": tgId },
+          signal: AbortSignal.timeout(8000),
+          ...(ep.body ? { body: ep.body } : {}),
+        };
+        const r = await fetch(url, opts);
+        const ms = Date.now() - t0;
+        const code = r.status;
+        if (code === 200 || code === 201) fresh[ep.path] = { status: "ok", code, ms };
+        else if (code === 400 || code === 422) fresh[ep.path] = { status: "warn", code, ms, error: `HTTP ${code} (потрібні параметри або API ключ)` };
+        else fresh[ep.path] = { status: "fail", code, ms, error: `HTTP ${code}` };
+      } catch (e: any) {
+        fresh[ep.path] = { status: "fail", code: null, ms: Date.now() - t0, error: e.message?.slice(0, 80) };
+      }
+    });
+    await Promise.all(checks);
+    setResults(fresh);
+    setRunning(false);
+    setLastRun(new Date());
+  }, [BASE_URL, tgId]);
+
+  useEffect(() => { runChecks(); }, []);
+
+  const total  = ENDPOINT_CATALOG.length;
+  const ok     = Object.values(results).filter(r => r.status === "ok").length;
+  const warn   = Object.values(results).filter(r => r.status === "warn").length;
+  const fail   = Object.values(results).filter(r => r.status === "fail").length;
+  const pct    = total > 0 ? Math.round((ok / total) * 100) : 0;
+  const scoreColor = pct >= 85 ? "#00FF88" : pct >= 60 ? "#FF8C00" : "#FF3355";
+
+  const copyReport = () => {
+    const lines: string[] = [
+      `TITAN-94 DIAGNOSTICS REPORT — ${new Date().toISOString()}`,
+      `Score: ${ok}/${total} (${pct}%)`,
+      "",
+    ];
+    MODULE_ORDER.forEach(mod => {
+      const eps = ENDPOINT_CATALOG.filter(e => e.module === mod);
+      if (!eps.length) return;
+      lines.push(`═══ ${mod.toUpperCase()} ═══`);
+      eps.forEach(ep => {
+        const r = results[ep.path];
+        const icon = !r ? "⏳" : r.status === "ok" ? "✅" : r.status === "warn" ? "⚠️" : "❌";
+        const ms = r?.ms != null ? ` ${r.ms}ms` : "";
+        const err = r?.error ? ` — ${r.error}` : "";
+        lines.push(`${icon} [${ep.method}] ${ep.path}${ms}${err}`);
+        lines.push(`   ${ep.desc}`);
+        if (ep.fix && r?.status !== "ok") {
+          lines.push(`   🔧 FIX: ${ep.fix}`);
+        }
+      });
+      lines.push("");
+    });
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopied(true);
+      toast({ title: "✓ Звіт скопійовано" });
+      setTimeout(() => setCopied(false), 3000);
+    });
+  };
+
+  const grouped = MODULE_ORDER.map(mod => ({
+    mod,
+    eps: ENDPOINT_CATALOG.filter(e => e.module === mod),
+  })).filter(g => g.eps.length > 0);
+
+  const statusIcon = (r?: CheckResult) => {
+    if (!r) return <Clock className="w-3.5 h-3.5 text-muted animate-pulse" />;
+    if (r.status === "ok")   return <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#00FF88" }} />;
+    if (r.status === "warn") return <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FF8C00" }} />;
+    return <X className="w-3.5 h-3.5" style={{ color: "#FF3355" }} />;
+  };
+
+  const statusBg = (r?: CheckResult) => {
+    if (!r) return "rgba(255,255,255,0.02)";
+    if (r.status === "ok")   return "rgba(0,255,136,0.04)";
+    if (r.status === "warn") return "rgba(255,140,0,0.06)";
+    return "rgba(255,51,85,0.06)";
+  };
+
+  const modOk = (eps: EndpointDef[]) => eps.every(e => results[e.path]?.status === "ok");
+  const modHasFail = (eps: EndpointDef[]) => eps.some(e => results[e.path]?.status === "fail");
+
+  return (
+    <div className="space-y-4">
+      {/* SUMMARY CARD */}
+      <div className="titan-card" style={{ background: "linear-gradient(135deg, rgba(0,255,136,0.04), rgba(0,255,255,0.04))", borderColor: `${scoreColor}33` }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] tracking-widest text-muted mb-1">SYSTEM HEALTH SCORE</div>
+            <div className="text-4xl font-bold font-mono" style={{ color: scoreColor }}>{pct}%</div>
+            <div className="text-xs text-muted mt-1">
+              <span style={{ color: "#00FF88" }}>✅ {ok} OK</span>
+              {warn > 0 && <span className="ml-2" style={{ color: "#FF8C00" }}>⚠ {warn} WARN</span>}
+              {fail > 0 && <span className="ml-2" style={{ color: "#FF3355" }}>❌ {fail} FAIL</span>}
+              <span className="ml-2 text-muted/60">/ {total} endpoints</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 items-end">
+            <div className="flex gap-2">
+              <button
+                onClick={runChecks}
+                disabled={running}
+                className="titan-btn titan-btn-sm flex items-center gap-1"
+                style={{ borderColor: `${scoreColor}50`, color: scoreColor }}
+              >
+                {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                {running ? S("Перевірка...", "Проверка...", "Checking...") : S("Перевірити", "Проверить", "Re-check")}
+              </button>
+              <button onClick={copyReport} className="titan-btn titan-btn-sm flex items-center gap-1">
+                {copied ? <Check className="w-3 h-3" /> : <ClipboardList className="w-3 h-3" />}
+                {S("Копіювати звіт", "Копировать отчёт", "Copy report")}
+              </button>
+            </div>
+            {lastRun && (
+              <div className="text-[10px] text-muted/50">
+                {S("Останній запуск:", "Последний запуск:", "Last run:")} {lastRun.toLocaleTimeString()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: scoreColor }} />
+        </div>
+      </div>
+
+      {/* PER-MODULE BREAKDOWN */}
+      {grouped.map(({ mod, eps }) => {
+        const allOk    = modOk(eps);
+        const hasFail  = modHasFail(eps);
+        const modColor = allOk ? "#00FF88" : hasFail ? "#FF3355" : "#FF8C00";
+        const isCollapsed = collapsedMods[mod] ?? false;
+        const pendingAll = eps.every(e => !results[e.path]);
+
+        return (
+          <div key={mod} className="titan-card" style={{ borderColor: `${modColor}25` }}>
+            {/* Module header */}
+            <button
+              className="w-full flex items-center justify-between"
+              onClick={() => setCollapsedMods(p => ({ ...p, [mod]: !p[mod] }))}
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ background: modColor, boxShadow: `0 0 6px ${modColor}` }} />
+                <span className="text-xs font-bold tracking-wider" style={{ color: modColor }}>{mod.toUpperCase()}</span>
+                <span className="text-[10px] text-muted/60">{eps.length} endpoints</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {pendingAll && running && <Loader2 className="w-3 h-3 text-muted animate-spin" />}
+                {!allOk && !pendingAll && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${modColor}15`, color: modColor }}>
+                    {eps.filter(e => results[e.path]?.status !== "ok" && results[e.path]).length} {S("проблем","проблем","issues")}
+                  </span>
+                )}
+                {isCollapsed ? <ChevronDown className="w-3.5 h-3.5 text-muted" /> : <ChevronUp className="w-3.5 h-3.5 text-muted" />}
+              </div>
+            </button>
+
+            {/* Endpoints list */}
+            {!isCollapsed && (
+              <div className="mt-3 space-y-1.5">
+                {eps.map((ep) => {
+                  const r    = results[ep.path];
+                  const isEx = expanded[ep.path];
+                  const hasFix = ep.fix && r && r.status !== "ok";
+
+                  return (
+                    <div key={ep.path} className="rounded" style={{ background: statusBg(r), border: `1px solid ${r?.status === "ok" ? "rgba(0,255,136,0.1)" : r?.status === "warn" ? "rgba(255,140,0,0.15)" : r?.status === "fail" ? "rgba(255,51,85,0.15)" : "rgba(255,255,255,0.05)"}` }}>
+                      <button
+                        className="w-full flex items-center gap-2 p-2.5 text-left"
+                        onClick={() => hasFix && setExpanded(p => ({ ...p, [ep.path]: !p[ep.path] }))}
+                        style={{ cursor: hasFix ? "pointer" : "default" }}
+                      >
+                        {statusIcon(r)}
+                        <span className="text-[10px] font-mono" style={{ color: "#FF8C00", whiteSpace: "nowrap" }}>{ep.method}</span>
+                        <span className="text-xs font-mono text-foreground/80 flex-1 truncate">{ep.path.replace("?limit=3","").replace("?limit=10","").replace("?limit=5","").replace("/7255058720","/\{id\}")}</span>
+                        {r?.ms != null && (
+                          <span className="text-[10px] text-muted/50 shrink-0">{r.ms}ms</span>
+                        )}
+                        {r?.code != null && (
+                          <span className="text-[10px] shrink-0 ml-1" style={{ color: r.status === "ok" ? "#00FF88" : r.status === "warn" ? "#FF8C00" : "#FF3355" }}>
+                            {r.code}
+                          </span>
+                        )}
+                        {hasFix && (
+                          isEx ? <ChevronUp className="w-3 h-3 text-muted shrink-0" /> : <ChevronDown className="w-3 h-3 text-muted shrink-0" />
+                        )}
+                      </button>
+
+                      {/* Description row */}
+                      <div className="px-2.5 pb-1.5 -mt-1 text-[10px] text-muted/60">
+                        {ep.desc}
+                        {ep.pages.length > 0 && (
+                          <span className="ml-2 text-muted/40">
+                            → {ep.pages.join(", ")}
+                          </span>
+                        )}
+                        {r?.error && (
+                          <span className="ml-2 font-mono" style={{ color: "#FF3355" }}>— {r.error}</span>
+                        )}
+                      </div>
+
+                      {/* Expandable fix instructions */}
+                      {hasFix && isEx && (
+                        <div className="mx-2.5 mb-2.5 p-3 rounded" style={{ background: "rgba(255,140,0,0.06)", border: "1px solid rgba(255,140,0,0.2)" }}>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Wrench className="w-3 h-3" style={{ color: "#FF8C00" }} />
+                            <span className="text-[10px] font-bold tracking-wider" style={{ color: "#FF8C00" }}>
+                              {S("ЩО ЗРОБИТИ AI ІНЖЕНЕРУ:", "ЧТО СДЕЛАТЬ AI ИНЖЕНЕРУ:", "WHAT THE AI ENGINEER SHOULD DO:")}
+                            </span>
+                          </div>
+                          <pre className="text-[10px] font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">{ep.fix}</pre>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(ep.fix!); toast({ title: "✓ Скопійовано fix" }); }}
+                            className="mt-2 titan-btn titan-btn-sm flex items-center gap-1"
+                            style={{ fontSize: 10, padding: "2px 8px" }}
+                          >
+                            <Copy className="w-3 h-3" /> Copy fix
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* TIPS FOR AI ENGINEER */}
+      <div className="titan-card" style={{ borderColor: "rgba(155,92,255,0.3)", background: "rgba(155,92,255,0.04)" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Info className="w-4 h-4" style={{ color: "#9B5CFF" }} />
+          <span className="text-xs font-bold tracking-wider" style={{ color: "#9B5CFF" }}>
+            {S("ІНСТРУКЦІЯ ДЛЯ AI ІНЖЕНЕРА", "ИНСТРУКЦИЯ ДЛЯ AI ИНЖЕНЕРА", "AI ENGINEER INSTRUCTIONS")}
+          </span>
+        </div>
+        <div className="space-y-2 text-xs text-muted/80 leading-relaxed">
+          <p>1. {S("Натисни «Перевірити» щоб отримати поточний стан всіх endpoints.", "Нажми «Проверить» для текущего состояния всех endpoints.", "Click 'Re-check' to get current status of all endpoints.")}</p>
+          <p>2. {S("❌ червоний = endpoint відсутній або повертає 5xx. Розкрий рядок → скопіюй Fix → попроси AI дописати код.", "❌ красный = endpoint отсутствует или возвращает 5xx. Раскрой строку → скопируй Fix → попроси AI написать код.", "❌ red = endpoint missing or 5xx. Expand row → copy Fix → ask AI to implement it.")}</p>
+          <p>3. {S("⚠️ жовтий = endpoint існує але потребує параметр або API ключ. Зазвичай — просто додай ключ у /settings.", "⚠️ жёлтый = endpoint существует но нужен параметр или API ключ. Обычно — просто добавь ключ в /settings.", "⚠️ yellow = endpoint exists but needs param or API key. Usually just add the key in /settings.")}</p>
+          <p>4. {S("Для додавання нового endpoint: знайди відповідний router (напр. autotrade.ts) → додай router.get() або router.post() → перезапусти API сервер.", "Для добавления endpoint: найди соответствующий router → добавь router.get/post() → перезапусти API.", "To add endpoint: find the router file → add router.get/post() → restart API server.")}</p>
+          <p>5. {S("Всі модулі ізольовані ErrorBoundary — зламаний модуль не впливає на інші.", "Все модули изолированы ErrorBoundary — сломанный модуль не влияет на другие.", "All modules are isolated by ErrorBoundary — a broken module won't crash others.")}</p>
+        </div>
+      </div>
+    </div>
   );
 }

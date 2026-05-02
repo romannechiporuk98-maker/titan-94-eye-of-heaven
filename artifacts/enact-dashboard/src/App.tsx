@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { LangProvider } from "@/lib/ui-prefs";
 import { initTelegram } from "@/lib/telegram";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ModuleNav } from "@/components/module-nav";
 import NotFound from "@/pages/not-found";
 import CommandCenter from "@/pages/command-center";
 import Home from "@/pages/home";
@@ -41,36 +43,45 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
+function Wrap({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <ErrorBoundary label={label}>
+      {children}
+      <ModuleNav />
+    </ErrorBoundary>
+  );
+}
+
 function Router() {
   return (
     <Layout>
       <Switch>
-        <Route path="/"               component={CommandCenter} />
-        <Route path="/contracts"      component={ContractsPage} />
-        <Route path="/immune"         component={ImmunePage}    />
-        <Route path="/evolution"      component={EvolutionPage} />
-        <Route path="/analytics"      component={AnalyticsPage} />
-        <Route path="/nexus"          component={NexusPage}     />
-        <Route path="/status"         component={StatusPage}    />
-        <Route path="/threats"        component={ThreatsPage}   />
-        <Route path="/analyze"        component={AnalyzePage}   />
-        <Route path="/earn"           component={EarnPage}      />
-        <Route path="/developer"      component={DeveloperPage} />
-        <Route path="/creator"        component={CreatorPage}   />
-        <Route path="/builder"        component={BuilderPage}   />
-        <Route path="/autotrade"      component={AutoTradePage} />
-        <Route path="/settings"       component={SettingsPage}  />
-        <Route path="/protocol-94"    component={Protocol94Page}/>
-        <Route path="/vault"          component={VaultPage}     />
-        <Route path="/access"         component={AccessPage}    />
-        <Route path="/about"          component={AboutPage}     />
-        <Route path="/privacy"        component={PrivacyPage}   />
-        <Route path="/ton-network"    component={TonNetworkPage}/>
-        <Route path="/grant"          component={GrantPage}      />
-        <Route path="/enact"          component={Home}          />
-        <Route path="/jobs"           component={Jobs}          />
-        <Route path="/jobs/:address"  component={JobDetail}     />
-        <Route path="/create"         component={CreateJob}     />
+        <Route path="/"            component={() => <Wrap label="COMMAND CENTER"><CommandCenter /></Wrap>} />
+        <Route path="/contracts"   component={() => <Wrap label="CONTRACTS"><ContractsPage /></Wrap>} />
+        <Route path="/immune"      component={() => <Wrap label="IMMUNE SYSTEM"><ImmunePage /></Wrap>} />
+        <Route path="/evolution"   component={() => <Wrap label="EVOLUTION"><EvolutionPage /></Wrap>} />
+        <Route path="/analytics"   component={() => <Wrap label="ANALYTICS"><AnalyticsPage /></Wrap>} />
+        <Route path="/nexus"       component={() => <Wrap label="NEURAL HUB"><NexusPage /></Wrap>} />
+        <Route path="/status"      component={() => <Wrap label="STATUS"><StatusPage /></Wrap>} />
+        <Route path="/threats"     component={() => <Wrap label="THREATS"><ThreatsPage /></Wrap>} />
+        <Route path="/analyze"     component={() => <Wrap label="ANALYZE"><AnalyzePage /></Wrap>} />
+        <Route path="/earn"        component={() => <Wrap label="EARNINGS"><EarnPage /></Wrap>} />
+        <Route path="/developer"   component={() => <Wrap label="DEVELOPER"><DeveloperPage /></Wrap>} />
+        <Route path="/creator"     component={() => <ErrorBoundary label="CREATOR"><CreatorPage /></ErrorBoundary>} />
+        <Route path="/builder"     component={() => <Wrap label="AGENT FORGE"><BuilderPage /></Wrap>} />
+        <Route path="/autotrade"   component={() => <Wrap label="AUTOTRADE"><AutoTradePage /></Wrap>} />
+        <Route path="/settings"    component={() => <ErrorBoundary label="SETTINGS"><SettingsPage /></ErrorBoundary>} />
+        <Route path="/protocol-94" component={() => <ErrorBoundary label="PROTOCOL-94"><Protocol94Page /></ErrorBoundary>} />
+        <Route path="/vault"       component={() => <Wrap label="VAULT"><VaultPage /></Wrap>} />
+        <Route path="/access"      component={() => <Wrap label="ACCESS"><AccessPage /></Wrap>} />
+        <Route path="/about"       component={() => <Wrap label="ABOUT"><AboutPage /></Wrap>} />
+        <Route path="/privacy"     component={() => <Wrap label="PRIVACY"><PrivacyPage /></Wrap>} />
+        <Route path="/ton-network" component={() => <Wrap label="TON NETWORK"><TonNetworkPage /></Wrap>} />
+        <Route path="/grant"       component={() => <Wrap label="TON GRANT"><GrantPage /></Wrap>} />
+        <Route path="/enact"       component={() => <Wrap label="ENACT"><Home /></Wrap>} />
+        <Route path="/jobs"        component={() => <Wrap label="JOBS"><Jobs /></Wrap>} />
+        <Route path="/jobs/:address" component={() => <Wrap label="JOB DETAIL"><JobDetail /></Wrap>} />
+        <Route path="/create"      component={() => <Wrap label="CREATE JOB"><CreateJob /></Wrap>} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
