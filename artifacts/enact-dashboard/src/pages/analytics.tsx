@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, BarChart, Bar, CartesianGrid } from "recharts";
 import { TrendingUp, Activity, Brain, Shield } from "lucide-react";
+import { useLang, t } from "@/lib/ui-prefs";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (p: string) => `${BASE}/api${p}`;
@@ -14,6 +15,7 @@ function usePoll(p: string, ms = 30000) {
 }
 
 export default function AnalyticsPage() {
+  const { lang } = useLang();
   const { data: chart }   = usePoll("/dashboard/chart", 30000);
   const { data: summary } = usePoll("/dashboard/summary", 8000);
   const { data: arb }     = usePoll("/arbitrage", 20000);
@@ -24,23 +26,23 @@ export default function AnalyticsPage() {
   return (
     <div className="titan-page">
       <div className="titan-page-header">
-        <h1 className="titan-title">◈ ANALYTICS</h1>
-        <p className="titan-subtitle">CryptoVarta intelligence — 24h activity & market signals</p>
+        <h1 className="titan-title">◈ {t("page.analytics.title", lang)}</h1>
+        <p className="titan-subtitle">{t("page.analytics.sub", lang)}</p>
       </div>
 
       {/* Top stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Stat label="SCAN CYCLES" value={summary?.scanCycles ?? 0} icon={Activity} color="text-primary" />
-        <Stat label="HEAL CYCLES" value={summary?.healCycles ?? 0} icon={Shield} color="text-safe" />
-        <Stat label="LEARN CYCLES" value={summary?.learnCycles ?? 0} icon={Brain} color="text-amber" />
-        <Stat label="ACCURACY" value={`${summary?.accuracyPct ?? "0"}%`} icon={TrendingUp} color="text-safe" />
+        <Stat label="SCAN" value={summary?.scanCycles ?? 0} icon={Activity} color="text-primary" />
+        <Stat label="HEAL" value={summary?.healCycles ?? 0} icon={Shield} color="text-safe" />
+        <Stat label="LEARN" value={summary?.learnCycles ?? 0} icon={Brain} color="text-amber" />
+        <Stat label={t("common.accuracy", lang)} value={`${summary?.accuracyPct ?? "0"}%`} icon={TrendingUp} color="text-safe" />
       </div>
 
       {/* Activity chart */}
       <div className="titan-card mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-5 h-5 text-primary" />
-          <span className="titan-label">24H ACTIVITY — SCANS · HEALS · ANALYSIS · THREATS</span>
+          <span className="titan-label">{t("page.analytics.24h", lang)}</span>
         </div>
         <div style={{ width: "100%", height: 240 }}>
           <ResponsiveContainer>
@@ -80,11 +82,11 @@ export default function AnalyticsPage() {
       <div className="titan-card">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-5 h-5 text-amber" />
-          <span className="titan-label">LIVE ARBITRAGE — STON.fi × DeDust</span>
+          <span className="titan-label">{t("page.analytics.arb", lang)} — STON.fi × DeDust</span>
         </div>
         <div className="space-y-2">
           {arbItems.length === 0 && (
-            <div className="text-center text-muted text-sm py-4">Awaiting market signals...</div>
+            <div className="text-center text-muted text-sm py-4">{t("common.scanning", lang)}</div>
           )}
           {arbItems.slice(0, 8).map((o: any, i: number) => (
             <div key={i} className="titan-activity-row">

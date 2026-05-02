@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLang, t } from "@/lib/ui-prefs";
 import {
   Heart, Zap, Shield, Activity, CheckCircle, ChevronDown, ChevronRight,
   AlertTriangle, ExternalLink, Clock, Target, BookOpen, Info,
@@ -29,6 +30,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 /* ── How it works expandable explanation ─────────────────────────── */
 function HowItWorks() {
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   return (
     <div className="titan-card mb-4" style={{ borderColor: "rgba(0,255,136,0.2)" }}>
@@ -38,7 +40,7 @@ function HowItWorks() {
       >
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-safe" />
-          <span className="text-sm font-bold text-safe">Як працює Імунна система? (інструкція)</span>
+          <span className="text-sm font-bold text-safe">{t("page.immune.how_works", lang)}</span>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-muted" /> : <ChevronRight className="w-4 h-4 text-muted" />}
       </button>
@@ -149,7 +151,7 @@ function VulnRow({ v }: { v: any }) {
               <div className="font-mono text-primary">{v.externalId || `#${v.id}`}</div>
             </div>
             <div>
-              <div className="text-muted tracking-wider mb-0.5">ПРОТОКОЛ</div>
+              <div className="text-muted tracking-wider mb-0.5">{t("common.protocol", lang)}</div>
               <div className="font-mono">{v.protocol || "Unknown"}</div>
             </div>
             <div>
@@ -182,7 +184,7 @@ function VulnRow({ v }: { v: any }) {
           {healSteps.length > 0 && (
             <div>
               <div className="text-[10px] text-muted tracking-wider mb-2 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-safe" /> ПЛАН ЛІКУВАННЯ (що зробив AI)
+                <Zap className="w-3 h-3 text-safe" /> {t("page.threats.heal_plan", lang)}
               </div>
               <div className="space-y-1">
                 {healSteps.map((step, i) => (
@@ -210,6 +212,7 @@ function VulnRow({ v }: { v: any }) {
 }
 
 export default function ImmunePage() {
+  const { lang } = useLang();
   const { data: stats }  = usePoll("/agent/stats", 4000);
   const { data: cycles } = usePoll("/agent/cycles", 4000);
   const { data: vulns }  = usePoll("/vulnerabilities?limit=50", 6000);
@@ -238,8 +241,8 @@ export default function ImmunePage() {
   return (
     <div className="titan-page">
       <div className="titan-page-header">
-        <h1 className="titan-title">◈ IMMUNE SYSTEM</h1>
-        <p className="titan-subtitle">Auto-healing · самовідновлення вразливостей · кожні 5 хв</p>
+        <h1 className="titan-title">◈ {t("page.immune.title", lang)}</h1>
+        <p className="titan-subtitle">{t("page.immune.subtitle", lang)}</p>
       </div>
 
       {/* How it works */}

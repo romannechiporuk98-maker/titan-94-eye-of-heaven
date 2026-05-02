@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLang, t } from "@/lib/ui-prefs";
 import {
   Activity, Brain, Zap, DollarSign, Eye, TrendingUp, Shield,
   RefreshCw, ChevronDown, ChevronRight, BookOpen, Info,
@@ -48,6 +49,7 @@ const CYCLE_META: Record<string, {
 
 /* ── Expandable cycle card ──────────────────────────────────────────── */
 function CycleCard({ c }: { c: any }) {
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   const meta = CYCLE_META[c.name] || {
     icon: Activity, colorClass: "text-primary", colorHex: "#00FFFF",
@@ -74,13 +76,13 @@ function CycleCard({ c }: { c: any }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-sm font-bold ${meta.colorClass}`}>{c.name}</span>
             <span className="text-[10px] text-muted">· {meta.nameUk}</span>
-            <span className="ml-auto titan-badge titan-badge-safe text-[10px]">● ACTIVE</span>
+            <span className="ml-auto titan-badge titan-badge-safe text-[10px]">● {t("common.online", lang)}</span>
           </div>
           <div className="flex flex-wrap gap-3 mt-1 text-[10px] text-muted">
-            <span>Запусків: <b className="text-foreground">{c.cycles}</b></span>
-            <span>Інтервал: <b className="text-foreground">{meta.interval}</b></span>
-            <span>Останній: <b className="text-foreground">{lastRun}</b></span>
-            <span>Наступний: <b style={{ color: meta.colorHex }}>{nextRun}</b></span>
+            <span>{t("common.runs", lang)}: <b className="text-foreground">{c.cycles}</b></span>
+            <span>{t("common.interval", lang)}: <b className="text-foreground">{meta.interval}</b></span>
+            <span>{t("common.last_run", lang)}: <b className="text-foreground">{lastRun}</b></span>
+            <span>{t("common.next_run", lang)}: <b style={{ color: meta.colorHex }}>{nextRun}</b></span>
           </div>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-muted shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted shrink-0" />}
@@ -90,13 +92,13 @@ function CycleCard({ c }: { c: any }) {
         <div className="px-3 pb-3 pt-1 space-y-3 border-t" style={{ borderColor: meta.colorHex + "20" }}>
           <div>
             <div className="text-[10px] font-bold tracking-wider mb-1.5" style={{ color: meta.colorHex }}>
-              <Info className="inline w-3 h-3 mr-1" />ЩО РОБИТЬ ЦЕЙ ЦИКЛ
+              <Info className="inline w-3 h-3 mr-1" />{t("page.immune.what_does", lang).toUpperCase()}
             </div>
             <p className="text-xs text-muted leading-relaxed">{meta.whatItDoes}</p>
           </div>
           <div>
             <div className="text-[10px] font-bold tracking-wider mb-1.5" style={{ color: meta.colorHex }}>
-              <Zap className="inline w-3 h-3 mr-1" />ЩО ВИПРАВЛЯЄ / ПОКРАЩУЄ
+              <Zap className="inline w-3 h-3 mr-1" />{t("page.immune.what_fixes", lang).toUpperCase()}
             </div>
             <p className="text-xs text-muted leading-relaxed">{meta.whatItFixes}</p>
           </div>
@@ -108,6 +110,7 @@ function CycleCard({ c }: { c: any }) {
 
 /* ── How it all works (top-level guide) ─────────────────────────────── */
 function AgentGuide() {
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   return (
     <div className="titan-card mb-4" style={{ borderColor: "rgba(0,255,255,0.2)" }}>
@@ -117,7 +120,7 @@ function AgentGuide() {
       >
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
-          <span className="text-sm font-bold text-primary">Що робить TITAN-94 агент? (інструкція)</span>
+          <span className="text-sm font-bold text-primary">{t("page.status.title", lang)} — {t("info.how_it_works", lang)}</span>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-muted" /> : <ChevronRight className="w-4 h-4 text-muted" />}
       </button>
@@ -159,6 +162,7 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 export default function StatusPage() {
+  const { lang } = useLang();
   const qc = useQueryClient();
   const { data: stats }  = usePoll("/agent/stats", 4000);
   const { data: cycles } = usePoll("/agent/cycles", 4000);
@@ -175,12 +179,12 @@ export default function StatusPage() {
   return (
     <div className="titan-page">
       <div className="titan-page-header">
-        <h1 className="titan-title">◈ AGENT STATUS</h1>
+        <h1 className="titan-title">◈ {t("page.status.title", lang)}</h1>
         <div className="flex items-center gap-2">
           <span className="titan-pulse" />
-          <span className="text-safe text-sm font-mono">ONLINE</span>
+          <span className="text-safe text-sm font-mono">{t("common.online", lang)}</span>
           <button className="titan-btn titan-btn-sm ml-2" onClick={() => scan.mutate()} disabled={scan.isPending}>
-            <RefreshCw className={`w-3 h-3 mr-1 ${scan.isPending ? "animate-spin" : ""}`} />SCAN
+            <RefreshCw className={`w-3 h-3 mr-1 ${scan.isPending ? "animate-spin" : ""}`} />{t("btn.scan", lang)}
           </button>
         </div>
       </div>

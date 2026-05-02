@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLang, t } from "@/lib/ui-prefs";
 import {
   Sparkles, Send, Brain, CheckCircle2, AlertTriangle, Zap, Loader2,
   Users, Trophy, MessageSquare, Activity, Key, ExternalLink,
@@ -10,15 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (p: string) => `${BASE}/api${p}`;
 
-const MODES = [
-  { id: "general",  icon: "✨", label: "Загальний" },
-  { id: "website",  icon: "🌐", label: "Сайт"      },
-  { id: "code",     icon: "💻", label: "Код"       },
-  { id: "image",    icon: "🎨", label: "Зображення"},
-  { id: "video",    icon: "🎬", label: "Відео"     },
-  { id: "bot",      icon: "🤖", label: "Telegram"  },
-  { id: "music",    icon: "🎵", label: "Музика"    },
-  { id: "text",     icon: "✍",  label: "Текст"     },
+const MODES_BASE = [
+  { id: "general",  icon: "✨", key: "mode.general"  },
+  { id: "website",  icon: "🌐", key: "mode.website"  },
+  { id: "code",     icon: "💻", key: "mode.code"     },
+  { id: "image",    icon: "🎨", key: "mode.image"    },
+  { id: "video",    icon: "🎬", key: "mode.video"    },
+  { id: "bot",      icon: "🤖", key: "mode.bot"      },
+  { id: "music",    icon: "🎵", key: "mode.music"    },
+  { id: "text",     icon: "✍",  key: "mode.text"     },
 ];
 
 const TIER_META: Record<string, { label: string; color: string; bg: string; order: number }> = {
@@ -54,7 +55,9 @@ function SpeedBar({ tier }: { tier: string }) {
 }
 
 export default function NexusPage() {
+  const { lang } = useLang();
   const { toast } = useToast();
+  const MODES = MODES_BASE.map(m => ({ ...m, label: t(m.key, lang) }));
   const [prompt, setPrompt]       = useState("");
   const [mode, setMode]           = useState("general");
   const [result, setResult]       = useState<any>(null);
@@ -141,14 +144,14 @@ export default function NexusPage() {
         <div className="absolute top-0 right-0 opacity-10"><Brain className="w-48 h-48 text-purple-400" /></div>
         <div className="relative flex justify-between items-start gap-4">
           <div>
-            <div className="text-[10px] tracking-[0.4em] text-purple-300/70 mb-1">MODULE 08 · MULTI-MODEL CONSENSUS ENGINE</div>
+            <div className="text-[10px] tracking-[0.4em] text-purple-300/70 mb-1">{t("page.nexus.module", lang)}</div>
             <h1 className="text-3xl font-bold" style={{
               background: "linear-gradient(90deg, #9B5CFF, #00FFFF, #FF8C00)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             }}>◈ NEXUS · AI ORCHESTRA</h1>
             <p className="text-xs text-muted mt-1">
-              {availableModels.length}/{models.length} моделей доступно ·{" "}
-              {tab === "orchestra" ? "4 AI паралельно → consensus" : "solo режим — обрана модель"}
+              {availableModels.length}/{models.length} {t("page.nexus.avail", lang)} ·{" "}
+              {tab === "orchestra" ? t("page.nexus.parallel", lang) : t("page.nexus.solo_mode", lang)}
             </p>
           </div>
           <div className="text-right shrink-0">
@@ -186,14 +189,12 @@ export default function NexusPage() {
         }}>
           <Key className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-red-400 text-sm mb-1">❌ GEMINI API KEY ПРОСТРОЧЕНИЙ</div>
-            <p className="text-xs text-muted mb-2">
-              Ключ прострочений — Google відхиляє всі запити. NEXUS Orchestra та HEAL цикл не працюють.
-            </p>
+            <div className="font-bold text-red-400 text-sm mb-1">❌ {t("page.nexus.key_exp", lang)}</div>
+            <p className="text-xs text-muted mb-2">{t("page.nexus.key_exp_d", lang)}</p>
             <div className="flex flex-wrap gap-2">
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
                  className="inline-flex items-center gap-1 titan-btn titan-btn-amber text-xs px-3 py-1.5">
-                <ExternalLink className="w-3 h-3" /> Отримати новий ключ
+                <ExternalLink className="w-3 h-3" /> {t("page.nexus.get_key", lang)}
               </a>
               <a href="./settings" className="inline-flex items-center gap-1 text-xs px-3 py-1.5 border transition"
                  style={{ borderColor: "rgba(0,255,255,0.3)", color: "#00FFFF" }}>
@@ -257,7 +258,7 @@ export default function NexusPage() {
                               <span className="text-[11px] font-bold" style={{ color: notAvail ? "#6b7280" : meta.color }}>
                                 {m.name}
                               </span>
-                              {selected && <span className="text-[9px] font-bold text-safe">✓ ОБРАНО</span>}
+                              {selected && <span className="text-[9px] font-bold text-safe">✓ {t("common.active", lang)}</span>}
                               {notAvail && <span className="text-[9px] text-red-400">NO KEY</span>}
                             </div>
                             <div className="text-[10px] text-muted mt-0.5 leading-tight">{m.desc}</div>
@@ -313,7 +314,7 @@ export default function NexusPage() {
               background:  tab === "orchestra" ? "rgba(155,92,255,0.1)" : "transparent",
               color:       tab === "orchestra" ? "#9B5CFF" : "#6b7280",
             }}>
-            <Users className="w-3 h-3" /> ORCHESTRA ({active.length} моделей)
+            <Users className="w-3 h-3" /> {t("page.nexus.orchestra", lang)} ({active.length})
           </button>
           <button onClick={() => { setTab("single"); if (!selectedModelId && availableModels[0]) setSelectedModelId(availableModels[0].id); }}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border transition"
@@ -323,7 +324,7 @@ export default function NexusPage() {
               color:       tab === "single" ? "#00FFFF" : "#6b7280",
             }}>
             <Cpu className="w-3 h-3" />
-            SOLO {selectedModel ? `· ${selectedModel.name}` : "(оберіть модель вище)"}
+            SOLO {selectedModel ? `· ${selectedModel.name}` : `(${t("page.nexus.pick_model", lang)})`}
           </button>
         </div>
 
@@ -366,7 +367,7 @@ export default function NexusPage() {
             }
           </button>
         </div>
-        <div className="text-[10px] text-muted mt-1">⌘/Ctrl + Enter — швидка відправка</div>
+        <div className="text-[10px] text-muted mt-1">{t("page.nexus.quick_send", lang)}</div>
       </div>
 
       {/* LOADING */}
@@ -418,11 +419,11 @@ export default function NexusPage() {
             <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-safe" />
-                <span className="font-bold text-safe">CONSENSUS</span>
-                <span className="text-[10px] text-muted">judge: <span className="text-amber">{result.judge}</span></span>
+                <span className="font-bold text-safe">{t("page.nexus.orchestra", lang).toUpperCase()}</span>
+                <span className="text-[10px] text-muted">{t("page.nexus.judge", lang)}: <span className="text-amber">{result.judge}</span></span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted">AGREEMENT</span>
+                <span className="text-[10px] text-muted">{t("page.nexus.agreement", lang)}</span>
                 <div className="w-24 h-1.5 bg-black/40 overflow-hidden">
                   <div className="h-full" style={{
                     width: `${result.agreementScore}%`,
@@ -459,7 +460,7 @@ export default function NexusPage() {
           <div className="titan-live-card p-4">
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-4 h-4 text-primary" />
-              <span className="font-bold text-primary text-sm">МОДЕЛІ ({result.models.length})</span>
+              <span className="font-bold text-primary text-sm">{t("page.nexus.models_lbl", lang)} ({result.models.length})</span>
             </div>
             <div className="grid gap-2">
               {result.models.map((m: any) => {

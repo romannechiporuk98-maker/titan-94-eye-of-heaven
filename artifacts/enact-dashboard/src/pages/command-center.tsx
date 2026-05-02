@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useLang, t } from "@/lib/ui-prefs";
 import {
   Eye, Shield, Brain, DollarSign, Activity, Zap, TrendingUp, Cpu,
   Radio, Wifi, Database, Bot, Globe, WifiOff, Lock, Coins,
@@ -32,6 +33,7 @@ function useNow() {
 }
 
 export default function CommandCenter() {
+  const { lang } = useLang();
   const now = useNow();
   const tonAddress          = useTonAddress();
   const { data: stats }    = usePoll<any>("/agent/stats", 4000);
@@ -92,8 +94,8 @@ export default function CommandCenter() {
               background: "linear-gradient(90deg, #00FFFF, #00FF88, #FF8C00)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-            }}>◈ PROTOCOL 94 · NEURAL CORE</h1>
-            <p className="text-xs text-muted mt-1">Серце TITAN-94 · суверенна AI нейромережа · захищено авторським правом · неможливо захопити</p>
+            }}>◈ {t("page.command.title", lang)}</h1>
+            <p className="text-xs text-muted mt-1">{t("page.command.tagline", lang)}</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-mono font-bold text-primary titan-counter" key={now.getSeconds()}>

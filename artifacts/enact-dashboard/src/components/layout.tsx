@@ -230,7 +230,7 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
         title={`${tzShort} · ${resolveTz(tz)}`}
       >
         <Clock className="w-3 h-3 opacity-60" />
-        <span>{fmtClock(now, tz)}</span>
+        <span>{fmtClock(now, tz, lang)}</span>
       </div>
 
       {/* Timezone picker */}
@@ -254,7 +254,7 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
                 className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-cyan-400/10 transition-colors"
                 style={{ color: o.value === tz ? "#00FFFF" : "rgba(207,255,255,0.7)" }}>
                 <span className="flex-1">{o.label}</span>
-                <span className="text-[10px] opacity-60 tabular-nums">{fmtClock(now, o.value)}</span>
+                <span className="text-[10px] opacity-60 tabular-nums">{fmtClock(now, o.value, lang)}</span>
                 {o.value === tz && <span className="text-[10px]">✓</span>}
               </button>
             ))}

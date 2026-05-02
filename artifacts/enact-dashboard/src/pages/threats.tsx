@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Shield, AlertTriangle, CheckCircle, Clock, Filter } from "lucide-react";
+import { useLang, t } from "@/lib/ui-prefs";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api = (p: string) => `${BASE}/api${p}`;
@@ -19,6 +20,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function ThreatsPage() {
+  const { lang } = useLang();
   const [severity, setSeverity] = useState("");
   const [status, setStatus]     = useState("");
 
@@ -35,8 +37,8 @@ export default function ThreatsPage() {
   return (
     <div className="titan-page">
       <div className="titan-page-header">
-        <h1 className="titan-title">◈ THREATS MATRIX</h1>
-        <span className="titan-badge titan-badge-danger">{stats.active || 0} ACTIVE</span>
+        <h1 className="titan-title">◈ {t("page.threats.title", lang)}</h1>
+        <span className="titan-badge titan-badge-danger">{stats.active || 0} {t("common.active", lang)}</span>
       </div>
 
       {/* Stats row */}
@@ -49,7 +51,7 @@ export default function ThreatsPage() {
         ].map(s => (
           <div key={s.label} className="titan-card text-center">
             <div className={`text-2xl font-bold ${s.c}`}>{s.val}</div>
-            <div className="text-xs text-muted">{s.label}</div>
+            <div className="text-xs text-muted">{s.label === "HEALED" ? t("common.healed_lbl", lang) : s.label}</div>
           </div>
         ))}
       </div>
@@ -59,8 +61,8 @@ export default function ThreatsPage() {
         <div className="titan-card mb-6 flex items-center gap-3">
           <AlertTriangle className="w-6 h-6 text-danger" />
           <div>
-            <div className="text-danger font-bold text-lg">{parseInt(stats.tvlAtRisk).toLocaleString()} TON AT RISK</div>
-            <div className="text-xs text-muted">TVL під загрозою активних вразливостей</div>
+            <div className="text-danger font-bold text-lg">{parseInt(stats.tvlAtRisk).toLocaleString()} TON {t("common.at_risk", lang)}</div>
+            <div className="text-xs text-muted">{t("page.threats.tvl_risk", lang)}</div>
           </div>
         </div>
       )}
@@ -70,20 +72,20 @@ export default function ThreatsPage() {
         <Filter className="w-4 h-4 text-muted mt-2" />
         {["", "critical", "high", "medium", "low"].map(s => (
           <button key={s} className={`titan-filter-btn ${severity === s ? "active" : ""}`} onClick={() => setSeverity(s)}>
-            {s || "ALL"}
+            {s || t("common.all", lang)}
           </button>
         ))}
         <div className="w-px bg-border mx-1" />
         {["", "active", "healing", "healed"].map(s => (
           <button key={s} className={`titan-filter-btn ${status === s ? "active" : ""}`} onClick={() => setStatus(s)}>
-            {s || "ALL STATUS"}
+            {s ? s.toUpperCase() : t("common.all_status", lang)}
           </button>
         ))}
       </div>
 
       {/* Vulnerabilities list */}
       {isLoading ? (
-        <div className="text-center text-muted py-10">Сканую...</div>
+        <div className="text-center text-muted py-10">{t("page.threats.scanning", lang)}</div>
       ) : (
         <div className="space-y-3">
           {vulns.map((v: any) => (
@@ -123,7 +125,7 @@ export default function ThreatsPage() {
             </div>
           ))}
           {vulns.length === 0 && (
-            <div className="text-center text-muted py-10">Немає вразливостей за фільтром</div>
+            <div className="text-center text-muted py-10">{t("page.threats.none", lang)}</div>
           )}
         </div>
       )}

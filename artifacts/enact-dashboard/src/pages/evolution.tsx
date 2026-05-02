@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Dna, Brain, Activity, TrendingUp, Code } from "lucide-react";
+import { useLang, t } from "@/lib/ui-prefs";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
 const api  = (p: string) => `${BASE}/api${p}`;
@@ -13,6 +14,7 @@ function usePoll(p: string, ms = 8000) {
 }
 
 export default function EvolutionPage() {
+  const { lang } = useLang();
   const { data: status } = usePoll("/ai-evolution/status", 6000);
   const { data: knowledge } = usePoll("/ai-evolution/knowledge?limit=20", 10000);
 
@@ -28,23 +30,23 @@ export default function EvolutionPage() {
     <div className="titan-page">
       <div className="titan-page-header flex justify-between items-center">
         <div>
-          <h1 className="titan-title">◈ EVOLUTION ENGINE</h1>
-          <p className="titan-subtitle">Autonomous self-development — організм мутує і росте</p>
+          <h1 className="titan-title">◈ {t("page.evolution.title", lang)}</h1>
+          <p className="titan-subtitle">{t("page.evolution.sub", lang)}</p>
         </div>
         <div className="text-right text-xs">
           <div className="flex items-center gap-1 justify-end">
             <span className="titan-pulse" style={{ background: "#a855f7" }} />
-            <span style={{ color: "#a855f7" }}>EVOLVING</span>
+            <span style={{ color: "#a855f7" }}>{t("page.evolution.evolv", lang)}</span>
           </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Tile label="GENERATION" value={`GEN ${status?.learnCycles ?? 1}`} icon={Dna} color="text-amber" />
-        <Tile label="PATTERNS LEARNED" value={status?.patternsLearned ?? 0} icon={Brain} color="text-primary" />
-        <Tile label="ACCURACY" value={`${status?.accuracyPct ?? "0"}%`} icon={TrendingUp} color="text-safe" />
-        <Tile label="STAGE" value={stage} icon={Activity} color={stageColor} />
+        <Tile label={t("common.generation", lang)} value={`GEN ${status?.learnCycles ?? 1}`} icon={Dna} color="text-amber" />
+        <Tile label={t("common.patterns", lang)} value={status?.patternsLearned ?? 0} icon={Brain} color="text-primary" />
+        <Tile label={t("common.accuracy", lang)} value={`${status?.accuracyPct ?? "0"}%`} icon={TrendingUp} color="text-safe" />
+        <Tile label={t("common.stage", lang)} value={stage} icon={Activity} color={stageColor} />
       </div>
 
       {/* Knowledge base */}
@@ -52,9 +54,9 @@ export default function EvolutionPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Code className="w-5 h-5 text-primary" />
-            <span className="titan-label">NEURAL KNOWLEDGE BASE — {knowledge?.total ?? 0} PATTERNS</span>
+            <span className="titan-label">{t("page.evolution.know", lang)} — {knowledge?.total ?? 0} {t("page.evolution.pats", lang)}</span>
           </div>
-          <div className="text-xs text-muted">avg confidence: {knowledge?.avgConfidence ?? "0"}%</div>
+          <div className="text-xs text-muted">{t("page.evolution.conf", lang)}: {knowledge?.avgConfidence ?? "0"}%</div>
         </div>
 
         {/* Categories */}
@@ -79,7 +81,7 @@ export default function EvolutionPage() {
             </div>
           ))}
           {(!knowledge?.patterns || knowledge.patterns.length === 0) && (
-            <div className="text-center text-muted text-sm py-6">Knowledge base empty — LEARN cycle will populate it</div>
+            <div className="text-center text-muted text-sm py-6">{t("common.no_data", lang)}</div>
           )}
         </div>
       </div>

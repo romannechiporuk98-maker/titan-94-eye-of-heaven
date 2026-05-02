@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLang, t } from "@/lib/ui-prefs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Copy, Users, TrendingUp, Zap, DollarSign, ArrowDownToLine,
@@ -22,6 +23,7 @@ function usePoll(path: string | null, ms = 10000) {
 }
 
 export default function EarnPage() {
+  const { lang } = useLang();
   const { toast } = useToast();
   const qc = useQueryClient();
   const tg = useMemo(() => getTgUser(), []);
@@ -48,7 +50,7 @@ export default function EarnPage() {
   const copyLink = () => {
     navigator.clipboard.writeText(refLink).then(() => {
       haptic("success");
-      toast({ title: "✅ Скопійовано!", description: "Реферальне посилання в буфері обміну" });
+      toast({ title: t("page.earn.copied", lang), description: t("page.earn.ref_copy", lang) });
     });
   };
 

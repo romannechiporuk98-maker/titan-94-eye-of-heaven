@@ -5,6 +5,7 @@ import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { LangProvider } from "@/lib/ui-prefs";
 import { initTelegram } from "@/lib/telegram";
 import NotFound from "@/pages/not-found";
 import CommandCenter from "@/pages/command-center";
@@ -99,17 +100,19 @@ export default function App() {
     : "/tonconnect-manifest.json";
 
   return (
-    <TonConnectUIProvider manifestUrl={manifestUrl}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={base}>
-            <Router />
-          </WouterRouter>
-          <Splash />
-          <Toaster />
-          <DevModeOverlay />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </TonConnectUIProvider>
+    <LangProvider>
+      <TonConnectUIProvider manifestUrl={manifestUrl}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={base}>
+              <Router />
+            </WouterRouter>
+            <Splash />
+            <Toaster />
+            <DevModeOverlay />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </TonConnectUIProvider>
+    </LangProvider>
   );
 }
