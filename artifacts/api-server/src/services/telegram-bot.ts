@@ -10,7 +10,8 @@ import { logger } from "../lib/logger";
 import * as store from "./store";
 import { get as getSecret } from "./secrets";
 
-const ADMIN_ID  = process.env["TELEGRAM_ADMIN_CHAT_ID"]  || "7255058720";
+// Read dynamically so vault updates take effect without server restart
+function getAdminId(): string { return process.env["TELEGRAM_ADMIN_CHAT_ID"] || "7255058720"; }
 const APP_URL   = process.env["PUBLIC_APP_URL"]          || ""; // e.g. https://titan-94.replit.app
 const RESERVE   = "UQC8seFr9xyA47kG2OIDRnKST8_1qPw3EN5pk6XlKLuNl-8v";
 // Prefer a project-dedicated token (TELEGRAM_BOT_TOKEN_API) so this API never
@@ -374,7 +375,7 @@ export async function sendCriticalAlert(title: string, message: string, severity
   if (!bot) return false;
   const icon = severity === "critical" ? "🚨🚨🚨" : severity === "high" ? "⚠️" : "🟡";
   try {
-    await bot.api.sendMessage(ADMIN_ID, `${icon} *${title}*\n\n${message}\n\n_TITAN-94 sentinel_`, { parse_mode: "Markdown" });
+    await bot.api.sendMessage(getAdminId(), `${icon} *${title}*\n\n${message}\n\n_TITAN-94 sentinel_`, { parse_mode: "Markdown" });
     return true;
   } catch (e) {
     logger.warn({ err: e }, "[TG-BOT] sendCriticalAlert failed");

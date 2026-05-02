@@ -17,14 +17,8 @@ router.get("/autotrade/meta", (_req, res) => {
 });
 
 router.get("/autotrade/price", async (_req, res) => {
-  const [snap, binancePrices] = await Promise.all([
-    at.fetchPriceSnapshot(),
-    import("../services/binance").then(b => b.fetchPrices(["TONUSDT"])).catch(() => ({})),
-  ]);
-  res.json({
-    ...snap,
-    binance_ton_usdt: (binancePrices as any).TONUSDT || null,
-  });
+  const snap = await at.fetchPriceSnapshot();
+  res.json(snap);
 });
 
 router.get("/autotrade/stats", async (_req, res) => {

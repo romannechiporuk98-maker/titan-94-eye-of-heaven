@@ -18,6 +18,7 @@ import path from "path";
 import https from "https";
 import { logger } from "../lib/logger";
 import * as store from "./store";
+import { getSync } from "./secrets";
 
 const STORE_FILE = path.resolve(process.cwd(), ".titan-autotrade.json");
 
@@ -50,6 +51,7 @@ export interface PriceSnapshot {
   ton_usdt: number;
   stonfi_ton_usdt: number;
   dedust_ton_usdt: number;
+  binance_ton_usdt: number | null;
   spread_bps: number;
   fetchedAt: string;
 }
@@ -139,11 +141,13 @@ export async function fetchPriceSnapshot(): Promise<PriceSnapshot> {
     dedust = parseFloat(ton?.price || "0");
   } catch (e) { logger.debug({ e: (e as Error).message }, "[AUTO-TRADE] DeDust fetch failed"); }
 
-  // Binance TONUSDT — only if key is configured (CEX price cross-validation)
+  // Binance TONUSDT — only if key is configured (CEX price cross-validation).
+  // Note: Binance blocks Replit/cloud IPs (geo restriction). If r?.price is missing,
+  // binance stays 0 and we fall back to tonapi — this is expected, not an error.
   try {
-    const { getSync } = await import("./secrets");
     if (getSync("BINANCE_API_KEY")) {
       const r = await httpGetJson<any>("https://api.binance.com/api/v3/ticker/price?symbol=TONUSDT");
+      // r.code === 0 with msg indicates geo-block; r.price is present on success
       binance = parseFloat(r?.price || "0");
       if (binance > 0) logger.debug({ binance }, "[AUTO-TRADE] Binance TON/USDT feed");
     }
@@ -160,7 +164,7 @@ export async function fetchPriceSnapshot(): Promise<PriceSnapshot> {
 
   if (!stonfi && !dedust && !reference) {
     const fallback = lastPrice?.ton_usdt || 3.84;
-    return { ton_usdt: fallback, stonfi_ton_usdt: fallback, dedust_ton_usdt: fallback, spread_bps: 0, fetchedAt: new Date().toISOString() };
+    return { ton_usdt: fallback, stonfi_ton_usdt: fallback, dedust_ton_usdt: fallback, binance_ton_usdt: binance || null, spread_bps: 0, fetchedAt: new Date().toISOString() };
   }
   if (!stonfi) stonfi = dedust || reference;
   if (!dedust) dedust = stonfi || reference;
@@ -171,6 +175,7 @@ export async function fetchPriceSnapshot(): Promise<PriceSnapshot> {
     ton_usdt: avg,
     stonfi_ton_usdt: stonfi,
     dedust_ton_usdt: dedust,
+    binance_ton_usdt: binance || null,
     spread_bps: spreadBps,
     fetchedAt: new Date().toISOString(),
   };

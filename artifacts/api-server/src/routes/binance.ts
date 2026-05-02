@@ -25,11 +25,11 @@ function requireCreator(req: Request, res: Response, next: NextFunction) {
 // ─── Public: market prices ─────────────────────────────────────────────────
 
 router.get("/binance/prices", async (_req, res) => {
-  const prices = await binance.fetchPrices(["TONUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]);
+  const result = await binance.fetchPricesWithMeta(["TONUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]);
   res.json({
     ok: true,
     keysConfigured: binance.hasKeys(),
-    prices,
+    ...result,
     fetchedAt: new Date().toISOString(),
   });
 });
@@ -50,8 +50,11 @@ router.get("/binance/status", requireCreator, async (_req, res) => {
   if (!configured) {
     return res.json({ ok: false, configured: false, message: "Binance API keys not configured. Add BINANCE_API_KEY and BINANCE_API_SECRET in Vault → API Keys." });
   }
-  const result = await binance.ping();
-  res.json({ configured, ...result });
+  const [pingResult, pricesMeta] = await Promise.all([
+    binance.ping(),
+    binance.fetchPricesWithMeta(["TONUSDT"]),
+  ]);
+  res.json({ configured, ...pingResult, priceSource: pricesMeta.source, geoBlocked: pricesMeta.geoBlocked ?? false });
 });
 
 // ─── Creator: account balances ────────────────────────────────────────────

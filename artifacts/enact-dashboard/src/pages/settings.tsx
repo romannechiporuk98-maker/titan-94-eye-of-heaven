@@ -230,16 +230,28 @@ function BinancePanel({ headers, isCreator }: { headers: Record<string, string>;
       {status?.configured && (
         <>
           {/* Ping info */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center p-2 border" style={{ borderColor: "rgba(0,255,136,0.2)" }}>
               <div className="text-[10px] text-muted">LATENCY</div>
               <div className="text-lg font-bold text-safe">{status?.latencyMs ? `${status.latencyMs}ms` : "—"}</div>
             </div>
             <div className="text-center p-2 border" style={{ borderColor: "rgba(0,255,136,0.2)" }}>
-              <div className="text-[10px] text-muted">STATUS</div>
+              <div className="text-[10px] text-muted">KEY AUTH</div>
               <div className={`text-lg font-bold ${status?.ok ? "text-safe" : "text-red-400"}`}>{status?.ok ? "OK" : "FAIL"}</div>
             </div>
+            <div className="text-center p-2 border" style={{ borderColor: "rgba(255,140,0,0.2)" }}>
+              <div className="text-[10px] text-muted">PRICE SRC</div>
+              <div className={`text-sm font-bold ${prices?.source === "binance" ? "text-safe" : prices?.source === "coingecko" ? "text-amber" : "text-muted"}`}>
+                {prices?.source === "binance" ? "BINANCE" : prices?.source === "coingecko" ? "COINGECKO" : "—"}
+              </div>
+            </div>
           </div>
+
+          {prices?.geoBlocked && (
+            <div className="text-[11px] text-amber p-2 border border-amber/30 bg-amber/5 mb-4">
+              ⚠ Binance заблокував цей IP за геолокацією. Ціни отримуємо через CoinGecko. Баланс/ордери — лише з дозволеної геолокації.
+            </div>
+          )}
 
           {status?.error && (
             <div className="text-xs text-red-400 p-2 border border-red-400/30 bg-red-400/5 mb-4">{status.error}</div>

@@ -1,6 +1,6 @@
 # TITAN-94 «ОКО НЕБЕСНЕ» — Project Konspekt
 
-> Останнє оновлення: 2026-05-02
+> Останнє оновлення: 2026-05-02 (сесія 3)
 
 ---
 
@@ -719,12 +719,173 @@ SSR-fallback (`"/tonconnect-manifest.json"`) — безпечний, бо React 
 
 ---
 
+## Binance CEX Інтеграція
+
+### Архітектура
+
+```
+secrets.ts (getSync) ──► binance.ts ──► routes/binance.ts (HTTP endpoints)
+                    ╰──► autotrade.ts (fetchPriceSnapshot — вбудована в цикл)
+                              ╰──► PriceSnapshot.binance_ton_usdt
+```
+
+### Сервіс `artifacts/api-server/src/services/binance.ts`
+
+| Функція | Опис | Auth |
+|---|---|---|
+| `fetchPrices(symbols[])` | Поточні ціни з `/api/v3/ticker/price` | public |
+| `fetchTicker24(symbol)` | 24h статистика (change%, volume, high/low) | public |
+| `fetchBalance(minUsdt=0.01)` | Spot баланс + USD оцінка | HMAC signed |
+| `ping()` | Перевірка ключа + latency | HMAC signed |
+| `placeOrder(opts)` | Тестовий або реальний ордер | HMAC signed |
+| `hasKeys()` | `!!(KEY && SECRET)` — bool перевірка | sync |
+
+**HMAC-SHA256 підпис:** кожен приватний запит — `timestamp + querystring` підписаний `SECRET`. Заголовок `X-MBX-APIKEY: KEY`.
+
+### HTTP Endpoints `artifacts/api-server/src/routes/binance.ts`
+
+```
+GET  /api/binance/prices            — public, ціни TON/BTC/ETH/BNB/SOL
+GET  /api/binance/status            — creator only, ping + latency
+GET  /api/binance/balance           — creator only, spot account
+GET  /api/binance/ticker/:symbol    — creator only, 24h тікер
+POST /api/binance/order/test        — creator only, test order (dry run)
+```
+
+### Інтеграція у PriceSnapshot
+
+`PriceSnapshot` (autotrade.ts) тепер містить `binance_ton_usdt: number | null`:
+
+```typescript
+export interface PriceSnapshot {
+  ton_usdt: number;           // reference = Binance || TonAPI || DEX avg
+  stonfi_ton_usdt: number;    // STON.fi v1 API
+  dedust_ton_usdt: number;    // DeDust v2 API
+  binance_ton_usdt: number | null;  // null якщо BINANCE_API_KEY не задано
+  spread_bps: number;         // |STON.fi - DeDust| / avg * 10000
+  fetchedAt: string;
+}
+```
+
+**Пріоритет ціни:** `binance > tonapi > DEX avg`. Якщо Binance недоступний — TonAPI. Якщо TonAPI — середнє DEX.
+
+**autotrade.ts** використовує статичний `import { getSync } from "./secrets"` (виправлено з dynamic import).
+
+### Geo-Block Replit → CoinGecko Fallback
+
+Binance блокує IP Replit за геолокацією (Replit = AWS us-east). Відповідь: `{code: 0, msg: "Service unavailable from a restricted location"}`.
+
+**Логіка по шарам:**
+
+| Шар | Binance доступний | Binance гео-блок |
+|---|---|---|
+| `fetchPrices()` / `fetchPricesWithMeta()` | `source: "binance"` | `source: "coingecko"`, `geoBlocked: true` |
+| `GET /api/binance/prices` | реальні ціни Binance | ціни CoinGecko, поле `geoBlocked: true` |
+| `GET /api/binance/status` | `ok: true`, `priceSource: "binance"` | `ok: false` (ping fails), `priceSource: "coingecko"`, `geoBlocked: true` |
+| `PriceSnapshot.binance_ton_usdt` | реальна ціна | `null` (autotrade fallback → TonAPI) |
+| `BinancePanel` PRICE SRC | BINANCE (зелений) | COINGECKO (янтарний) + попередження |
+
+**Settings BinancePanel:** показує `PRICE SRC` — `BINANCE` (зелений) або `COINGECKO` (янтарний). Якщо `geoBlocked: true` — показується попередження: "Binance заблокував цей IP за геолокацією. Баланс/ордери — лише з дозволеної геолокації".
+
+**CoinGecko symbol mapping:** `TONUSDT → the-open-network`, `BTCUSDT → bitcoin`, `ETHUSDT → ethereum`, `BNBUSDT → binancecoin`, `SOLUSDT → solana`.
+
+### Autotrade UI (enact-dashboard)
+
+- `/autotrade` сторінка: показує `binance_ton_usdt` рядком під DeDust якщо ключ є
+- `/settings` сторінка: `BinancePanel` component — ping status, latency, live prices TON/BTC/ETH/BNB, spot balance
+
+---
+
+## Система Секретів — Vault
+
+### `artifacts/api-server/src/services/secrets.ts`
+
+Зберігає overrides у `.titan-secrets.json` (server CWD). Precedence: **local override > `process.env`**.
+
+Поточні `SECRET_KEYS` (11 ключів):
+
+| Ключ | Група | Required | Опис |
+|---|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | telegram | ✅ | Bot token для API server (TITAN94_BOT) |
+| `TELEGRAM_ADMIN_CHAT_ID` | telegram | — | Chat ID для push-алертів і sendCriticalAlert() |
+| `TON_API_KEY` | ton | — | TonCenter rate limit: 1→10 req/sec |
+| `TONAPI_KEY` | ton | — | TonAPI.io pro — Jetton/NFT details |
+| `GEMINI_API_KEY` | ai | — | Базова AI модель (gemini-2.0-flash) |
+| `OPENAI_API_KEY` | ai | — | Крос-валідація в Orchestra |
+| `ANTHROPIC_API_KEY` | ai | — | Claude — судія в консенсусі |
+| `OPENROUTER_API_KEY` | ai | — | 100+ моделей через один API |
+| `BINANCE_API_KEY` | trading | — | Spot trading + ціни |
+| `BINANCE_API_SECRET` | trading | — | HMAC підпис Binance ордерів |
+| `TWITTER_BEARER_TOKEN` | social | — | X (Twitter) posting |
+
+**API endpoints (secrets):**
+```
+GET  /api/secrets/status     — creator only, список ключів + hint
+POST /api/secrets/set        — creator only, { key, value }
+DELETE /api/secrets/:key     — creator only
+```
+
+**Auto-detect ключа:** `detectSecretKey(rawValue)` — розпізнає token за форматом:
+- `\d{6,12}:[A-Za-z0-9_-]{30,}` → `TELEGRAM_BOT_TOKEN`
+- `sk-ant-api\d+-` → `ANTHROPIC_API_KEY`
+- `sk-or-v1-` → `OPENROUTER_API_KEY`
+- `AIza[0-9A-Za-z_-]{35}` → `GEMINI_API_KEY`
+- 64-char alphanum → `BINANCE_API_KEY` (medium confidence)
+- JWT (`eyJ...`) → `TONAPI_KEY`
+
+### Vault UI `artifacts/enact-dashboard/src/pages/vault.tsx`
+
+- Групування ключів за `GROUP_ORDER = ["telegram", "ton", "ai", "trading", "social"]`
+- `TELEGRAM_ADMIN_CHAT_ID` належить до групи `"telegram"` → відображається першою
+- Settings → BinancePanel підтягується через `useQuery(["/binance/status"])` після того як ключі встановлені
+
+### TELEGRAM_ADMIN_CHAT_ID — динамічне зчитування
+
+`telegram-bot.ts` і `telegram.ts` тепер читають значення **динамічно** (`getAdminId()` / `getAdminToken()`) щоразу при виклику, а не один раз при старті модуля. Тобто:
+- Якщо встановити `TELEGRAM_ADMIN_CHAT_ID` через UI → алерти почнуть іти без рестарту сервера
+- **Спосіб дізнатись ID:** написати боту `@userinfobot` у Telegram — він поверне твій chat ID
+
+---
+
+## Telegram Bot Архітектура
+
+### Два процеси — два токени (правило 409)
+
+| Процес | Файл | Token | Роль |
+|---|---|---|---|
+| API Server (основний) | `telegram-bot.ts` | `TELEGRAM_BOT_TOKEN` | long-polling, команди /start /menu /scan /balance, сповіщення |
+| Titan_94 Agent (standalone) | `agent.js` | `TELEGRAM_BOT_TOKEN_2` або `TELEGRAM_BOT_TOKEN_STANDALONE` | optional bot — якщо не задано, агент silent worker |
+
+> **ПРАВИЛО:** один токен = один polling процес. Якщо два процеси використовують один токен → Telegram повертає 409 Conflict.
+> Агент НІКОЛИ не fallback-ає на `TELEGRAM_BOT_TOKEN`.
+
+### Поточний стан (2026-05-02)
+
+- ✅ `TITAN94_BOT` (API server) — запущений, long-polling, обробляє команди
+- ✅ Агент — silent worker (Gemini + BugBounty + TON scanner, без бота)
+- ⚠️ `TELEGRAM_ADMIN_CHAT_ID` — не задано в Replit Secrets → алерти йдуть на fallback `7255058720`
+- ⚠️ `TELEGRAM_BOT_TOKEN_2` — не задано → у агента немає бота (нормально для silent mode)
+
+### sendCriticalAlert() — потік алертів
+
+```
+heartbeat.ts / autotrade.ts → sendCriticalAlert(title, msg, severity)
+  → telegram-bot.ts → bot.api.sendMessage(getAdminId(), ...)
+                                              ↑
+                       process.env["TELEGRAM_ADMIN_CHAT_ID"] || "7255058720"
+```
+
+---
+
 ## Відомі обмеження / TODO
 
-| # | Компонент | Опис |
-|---|---|---|
-| 1 | `tonconnect.ts` | `buildPaymentTx` не кодує BoC payload з коментарем. Матчинг платежу за `(address, amount)` — fragile. **TODO:** додати `@ton/core` comment cell |
-| 2 | `developer.tsx` | Транзакція без on-chain comment — ідентифікація тільки через webhook |
-| 3 | `telegram.ts` | HMAC-верифікація `x-tg-init-data` підготовлена (поле присутнє) але не активована на бекенді |
-| 4 | `telegram.ts` | `requestFullscreen()` — TG 8.0+. Обгорнутий у try/catch, тихо ігнорується на старших версіях |
-| 5 | `earn.tsx` | Після оплати через Stars (не TonConnect) — юзер перенаправляється у бот. Немає автоактивації з фронту — лише ton-poller або ручне видання |
+| # | Статус | Компонент | Опис |
+|---|---|---|---|
+| 1 | ⚠️ TODO | `tonconnect.ts` | `buildPaymentTx` без BoC payload. Матчинг за `(address, amount)`. **Наступний крок:** `@ton/core` comment cell = `TITAN94_<tgId>_<plan>` |
+| 2 | ⚠️ TODO | `developer.tsx` | Транзакція без on-chain comment — ідентифікація тільки через webhook |
+| 3 | ⚠️ TODO | `telegram.ts` (frontend) | HMAC-верифікація `x-tg-init-data` підготовлена але не активована на бекенді |
+| 4 | ℹ️ OK | `telegram.ts` (frontend) | `requestFullscreen()` — TG 8.0+. Обгорнутий у try/catch |
+| 5 | ⚠️ TODO | `earn.tsx` | Stars оплата → redirect у бот. Немає автоактивації з фронту |
+| 6 | ⚠️ TODO | Agent alerts | `TELEGRAM_ADMIN_CHAT_ID` не задано → агент не шле алерти у конкретний чат |
+| 7 | ⚠️ TODO | `binance.ts` | `placeOrder` реальні ордери — потрібне ручне тестування перед увімкненням |
+| 8 | ℹ️ OK | `autotrade.ts` | Paper-trading на реальних цінах. Real swaps вимагають TON Connect + smart contract |

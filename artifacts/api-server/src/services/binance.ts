@@ -83,19 +83,76 @@ function authHeaders(): Record<string, string> { return { "X-MBX-APIKEY": apiKey
 
 export interface SymbolPrice { symbol: string; price: string }
 
-export async function fetchPrices(symbols: string[] = ["TONUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT"]): Promise<Record<string, number>> {
+// CoinGecko IDs mapped to Binance-style symbols (fallback when Binance geo-blocked)
+const COINGECKO_IDS: Record<string, string> = {
+  TONUSDT:  "the-open-network",
+  BTCUSDT:  "bitcoin",
+  ETHUSDT:  "ethereum",
+  BNBUSDT:  "binancecoin",
+  SOLUSDT:  "solana",
+  DOGEUSDT: "dogecoin",
+};
+
+async function fetchPricesFromCoinGecko(symbols: string[]): Promise<Record<string, number>> {
+  const ids = symbols.map(s => COINGECKO_IDS[s]).filter(Boolean);
+  if (!ids.length) return {};
+  try {
+    const qs = `ids=${ids.join(",")}&vs_currencies=usd`;
+    const data = await new Promise<any>((resolve, reject) => {
+      const opts = { hostname: "api.coingecko.com", path: `/api/v3/simple/price?${qs}`, method: "GET",
+        headers: { "User-Agent": "TITAN-94/1.0", "Accept": "application/json" } };
+      const req = https.request(opts, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString())); } catch(e){ reject(e); } });
+      });
+      req.on("error", reject);
+      req.setTimeout(8000, () => req.destroy(new Error("CoinGecko timeout")));
+      req.end();
+    });
+    const out: Record<string, number> = {};
+    for (const sym of symbols) {
+      const id = COINGECKO_IDS[sym];
+      if (id && data[id]?.usd) out[sym] = data[id].usd;
+    }
+    return out;
+  } catch (e: any) {
+    logger.warn({ err: e.message }, "[BINANCE] CoinGecko fallback failed");
+    return {};
+  }
+}
+
+export interface FetchPricesResult {
+  prices: Record<string, number>;
+  source: "binance" | "coingecko" | "none";
+  geoBlocked?: boolean;
+}
+
+export async function fetchPricesWithMeta(symbols: string[] = ["TONUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT"]): Promise<FetchPricesResult> {
   try {
     const qs = `symbols=${encodeURIComponent(JSON.stringify(symbols))}`;
-    const data = await httpsGet<SymbolPrice[]>(`/api/v3/ticker/price?${qs}`);
+    const data = await httpsGet<any>(`/api/v3/ticker/price?${qs}`);
+    // Binance returns { code: 0, msg: "Service unavailable..." } when geo-blocked
+    if (data?.code === 0 && data?.msg?.includes("restricted location")) {
+      logger.warn("[BINANCE] Geo-blocked — falling back to CoinGecko");
+      const prices = await fetchPricesFromCoinGecko(symbols);
+      return { prices, source: Object.keys(prices).length ? "coingecko" : "none", geoBlocked: true };
+    }
     const out: Record<string, number> = {};
     for (const row of Array.isArray(data) ? data : []) {
       out[row.symbol] = parseFloat(row.price) || 0;
     }
-    return out;
+    return { prices: out, source: "binance" };
   } catch (e: any) {
-    logger.warn({ err: e.message }, "[BINANCE] fetchPrices failed");
-    return {};
+    logger.warn({ err: e.message }, "[BINANCE] fetchPrices failed — trying CoinGecko");
+    const prices = await fetchPricesFromCoinGecko(symbols);
+    return { prices, source: Object.keys(prices).length ? "coingecko" : "none" };
   }
+}
+
+export async function fetchPrices(symbols: string[] = ["TONUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT"]): Promise<Record<string, number>> {
+  const { prices } = await fetchPricesWithMeta(symbols);
+  return prices;
 }
 
 export interface Ticker24 {

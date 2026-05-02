@@ -3,7 +3,8 @@ import { isBotEnabled, sendNotification, sendCriticalAlert, broadcastToSubscribe
 import { runTonPoller } from "../services/ton-poller";
 
 const router: IRouter = Router();
-const ADMIN_TOKEN = process.env["TELEGRAM_ADMIN_CHAT_ID"] || "7255058720";
+// Read dynamically so vault updates take effect without server restart
+function getAdminToken(): string { return process.env["TELEGRAM_ADMIN_CHAT_ID"] || "7255058720"; }
 
 router.get("/telegram/status", (_req, res) => {
   res.json({
@@ -16,7 +17,7 @@ router.get("/telegram/status", (_req, res) => {
 
 router.post("/telegram/notify", async (req, res) => {
   const { telegramId, text, adminToken } = req.body || {};
-  if (adminToken !== ADMIN_TOKEN) return res.status(403).json({ error: "Forbidden" });
+  if (adminToken !== getAdminToken()) return res.status(403).json({ error: "Forbidden" });
   if (!telegramId || !text) return res.status(400).json({ error: "telegramId and text required" });
   const ok = await sendNotification(String(telegramId), String(text));
   res.json({ sent: ok });
@@ -24,7 +25,7 @@ router.post("/telegram/notify", async (req, res) => {
 
 router.post("/telegram/broadcast", async (req, res) => {
   const { text, plan, adminToken } = req.body || {};
-  if (adminToken !== ADMIN_TOKEN) return res.status(403).json({ error: "Forbidden" });
+  if (adminToken !== getAdminToken()) return res.status(403).json({ error: "Forbidden" });
   if (!text) return res.status(400).json({ error: "text required" });
   const result = await broadcastToSubscribers(String(text), (plan || "elite") as any);
   res.json(result);
@@ -32,7 +33,7 @@ router.post("/telegram/broadcast", async (req, res) => {
 
 router.post("/telegram/alert", async (req, res) => {
   const { title, message, severity, adminToken } = req.body || {};
-  if (adminToken !== ADMIN_TOKEN) return res.status(403).json({ error: "Forbidden" });
+  if (adminToken !== getAdminToken()) return res.status(403).json({ error: "Forbidden" });
   if (!title || !message) return res.status(400).json({ error: "title and message required" });
   const ok = await sendCriticalAlert(String(title), String(message), severity || "high");
   res.json({ sent: ok });
