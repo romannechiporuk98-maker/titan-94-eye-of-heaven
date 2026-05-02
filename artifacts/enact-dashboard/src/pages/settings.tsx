@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Key, ShieldCheck, ShieldAlert, ExternalLink, Eye, EyeOff,
   Save, Trash2, Loader2, CheckCircle2, AlertCircle, Lock, Settings as SettingsIcon,
-  TrendingUp, Wallet, Zap, RefreshCw,
+  TrendingUp, Wallet, Zap, RefreshCw, Copy, UserCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getTgUser, haptic } from "@/lib/telegram";
@@ -84,6 +84,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* ADMIN ID CARD */}
+      <AdminIdCard tgId={String(tg.id)} toast={toast} />
 
       {isLoading && <div className="titan-card text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></div>}
       {error    && <div className="titan-card text-red-400">Помилка завантаження: {String(error)}</div>}
@@ -167,6 +170,44 @@ export default function SettingsPage() {
           <SettingsIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <div>
             <strong className="text-primary">Як це працює:</strong> ключі зберігаються локально в <code>.titan-secrets.json</code>, а не в process env. Override має пріоритет над env-змінними. Telegram бот рестартується автоматично коли його токен змінюється — без перезапуску сервера. Інші ключі (Gemini, Claude, GPT) застосовуються одразу при наступному запиті.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN ID CARD ────────────────────────────────────────────────────────────
+function AdminIdCard({ tgId, toast }: { tgId: string; toast: any }) {
+  const copy = (val: string, label: string) => {
+    navigator.clipboard.writeText(val).then(() => toast({ title: `✓ ${label} скопійовано` })).catch(() => {});
+  };
+  return (
+    <div className="titan-live-card p-4 mb-3" style={{ borderColor: "rgba(255,140,0,0.5)", background: "rgba(255,140,0,0.04)" }}>
+      <div className="flex items-center gap-2 mb-3">
+        <UserCheck className="w-5 h-5 text-amber" />
+        <h3 className="text-sm font-bold text-amber">ТВІЙ TELEGRAM ID · ADMIN CHAT ID</h3>
+      </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between p-3 border" style={{ borderColor: "rgba(255,140,0,0.3)", background: "rgba(0,0,0,0.3)" }}>
+          <div>
+            <div className="text-[10px] text-muted tracking-widest mb-1">CREATOR / ADMIN TG ID</div>
+            <div className="text-2xl font-bold font-mono text-amber">{tgId}</div>
+          </div>
+          <button
+            onClick={() => copy(tgId, "TG ID")}
+            className="titan-btn titan-btn-amber flex items-center gap-1"
+          >
+            <Copy className="w-3 h-3" /> Copy ID
+          </button>
+        </div>
+        <div className="p-3 border rounded text-xs space-y-1.5" style={{ borderColor: "rgba(0,255,255,0.2)", background: "rgba(0,255,255,0.03)" }}>
+          <div className="text-primary font-bold text-[10px] tracking-widest">ЯК ВСТАНОВИТИ TELEGRAM_ADMIN_CHAT_ID:</div>
+          <div className="text-muted space-y-1">
+            <p>1. Напиши <code className="text-amber bg-amber/10 px-1 rounded">@userinfobot</code> будь-яке повідомлення в Telegram</p>
+            <p>2. Бот відповість твій ID — скопіюй число</p>
+            <p>3. Встав його у поле <code className="text-primary bg-primary/10 px-1 rounded">TELEGRAM_ADMIN_CHAT_ID</code> нижче та натисни Save</p>
+            <p className="text-[10px] pt-1" style={{ color: "#9ca3af" }}>Зараз системний fallback = <span className="text-amber">{tgId}</span>. Якщо цей ID вірний — нічого змінювати не треба.</p>
           </div>
         </div>
       </div>

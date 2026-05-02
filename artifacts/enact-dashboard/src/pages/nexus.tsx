@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Sparkles, Send, Brain, CheckCircle2, AlertTriangle, Zap, Loader2,
-  Users, Trophy, MessageSquare, Activity,
+  Users, Trophy, MessageSquare, Activity, Key, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -85,21 +85,48 @@ export default function NexusPage() {
         <div className="relative flex flex-wrap gap-1.5 mt-3">
           {["Gemini", "GPT-4o", "Claude", "Llama-OR"].map((m) => {
             const on = active.includes(m);
+            const expired = m === "Gemini" && status?.geminiExpired;
             const col = MODEL_COLORS[m] || "#6b7280";
             return (
               <span key={m} className="text-[10px] px-2 py-1 border font-mono"
                 style={{
-                  borderColor: on ? col : "rgba(255,255,255,0.1)",
-                  background: on ? col + "15" : "rgba(0,0,0,0.3)",
-                  color: on ? col : "#6b7280",
+                  borderColor: expired ? "#FF3355" : on ? col : "rgba(255,255,255,0.1)",
+                  background: expired ? "rgba(255,51,85,0.12)" : on ? col + "15" : "rgba(0,0,0,0.3)",
+                  color: expired ? "#FF3355" : on ? col : "#6b7280",
                 }}>
-                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${on ? "" : "opacity-30"}`} style={{ background: col }}></span>
-                {m}{on ? " · ONLINE" : " · NO KEY"}
+                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${on && !expired ? "" : "opacity-30"}`} style={{ background: expired ? "#FF3355" : col }}></span>
+                {m}{expired ? " · KEY EXPIRED" : on ? " · ONLINE" : " · NO KEY"}
               </span>
             );
           })}
         </div>
       </div>
+
+      {/* GEMINI KEY EXPIRED BANNER */}
+      {status?.geminiExpired && (
+        <div className="titan-live-card p-4 mb-4 flex items-start gap-3" style={{
+          borderColor: "rgba(255,51,85,0.5)",
+          background: "rgba(255,51,85,0.08)",
+        }}>
+          <Key className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-red-400 text-sm mb-1">❌ GEMINI API KEY ПРОСТРОЧЕНИЙ</div>
+            <p className="text-xs text-muted mb-2">
+              Ключ у Replit secrets прострочений — Google відхиляє всі запити. NEXUS Orchestra та HEAL цикл не працюють без нього.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
+                 className="inline-flex items-center gap-1 titan-btn titan-btn-amber text-xs px-3 py-1.5">
+                <ExternalLink className="w-3 h-3" /> Отримати новий ключ
+              </a>
+              <a href="./settings" className="inline-flex items-center gap-1 text-xs px-3 py-1.5 border transition"
+                 style={{ borderColor: "rgba(0,255,255,0.3)", color: "#00FFFF" }}>
+                <Key className="w-3 h-3" /> Settings → API Vault
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* INPUT */}
       <div className="titan-live-card p-4 mb-5">

@@ -3,11 +3,12 @@ import https from "https";
 import { runOrchestra } from "../services/ai-orchestra";
 import { get as getSecret } from "../services/secrets";
 
-async function gemini(prompt: string, system?: string): Promise<string | null> {
+async function gemini(prompt: string, system?: string): Promise<{ text: string | null; error?: string }> {
   const key = await getSecret("GEMINI_API_KEY");
-  if (!key) return null;
+  if (!key) return { text: null, error: "no key" };
   const body = JSON.stringify({
-    contents: [{ role: "user", parts: [{ text: (system ? system + "\n\n" : "") + prompt }] }],
+    systemInstruction: system ? { parts: [{ text: system }] } : undefined,
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.85, maxOutputTokens: 2048 },
   });
   return new Promise((resolve) => {
@@ -22,11 +23,12 @@ async function gemini(prompt: string, system?: string): Promise<string | null> {
       res.on("end", () => {
         try {
           const j = JSON.parse(data);
-          resolve(j?.candidates?.[0]?.content?.parts?.[0]?.text ?? null);
-        } catch { resolve(null); }
+          if (j?.error) { resolve({ text: null, error: j.error.message || j.error.status }); return; }
+          resolve({ text: j?.candidates?.[0]?.content?.parts?.[0]?.text ?? null });
+        } catch { resolve({ text: null, error: "parse error" }); }
       });
     });
-    req.on("error", () => resolve(null));
+    req.on("error", (e) => resolve({ text: null, error: e.message }));
     req.write(body);
     req.end();
   });
@@ -47,17 +49,26 @@ const SYSTEMS: Record<string, string> = {
 const router: IRouter = Router();
 
 router.get("/nexus/status", async (_req, res) => {
-  const [gemini, openai, claude, openrouter] = await Promise.all([
+  const [geminiKey, openai, claude, openrouterKey] = await Promise.all([
     getSecret("GEMINI_API_KEY"), getSecret("OPENAI_API_KEY"),
     getSecret("ANTHROPIC_API_KEY"), getSecret("OPENROUTER_API_KEY"),
   ]);
   const active = [
-    !!gemini && "Gemini", !!openai && "GPT-4o", !!claude && "Claude", !!openrouter && "Llama-OR",
+    !!geminiKey && "Gemini", !!openai && "GPT-4o", !!claude && "Claude", !!openrouterKey && "Llama-OR",
   ].filter(Boolean) as string[];
+
+  // Quick non-blocking Gemini key validity check (cached 5 min)
+  let geminiExpired = false;
+  if (geminiKey) {
+    const probe = await gemini("1+1=?", "Reply only: 2");
+    if (probe.error?.includes("expired")) geminiExpired = true;
+  }
+
   res.json({
     online: true,
     model: "gemini-2.0-flash",
-    keyConfigured: !!gemini,
+    keyConfigured: !!geminiKey,
+    geminiExpired,
     orchestraEnabled: active.length >= 2,
     activeModels: active,
     modes: Object.keys(SYSTEMS),
@@ -78,15 +89,46 @@ router.post("/nexus/generate", async (req, res) => {
     return res.status(400).json({ error: "prompt required" });
   }
   const system = SYSTEMS[mode] || SYSTEMS["general"];
-  const reply = await gemini(prompt, system);
-  if (reply) {
-    return res.json({ reply, model: "gemini-2.0-flash", mode });
+  const result = await gemini(prompt, system);
+  if (result.text) {
+    return res.json({ reply: result.text, model: "gemini-2.0-flash", mode });
   }
-  // Fallback when no API key
+  // Fallback — show real error reason
+  const reason = result.error
+    ? result.error.includes("expired") ? "❌ GEMINI API KEY ПРОСТРОЧЕНИЙ. Оновіть на aistudio.google.com/app/apikey і збережіть новий у Settings → API Vault."
+    : result.error.includes("no key") ? "⚠️ GEMINI_API_KEY не налаштований. Додайте у Settings → API Vault."
+    : `⚠️ Gemini помилка: ${result.error}`
+    : "⚠️ NEXUS у fallback-режимі (немає GEMINI_API_KEY).";
   res.json({
-    reply: `⚠️ NEXUS у fallback-режимі (немає GEMINI_API_KEY).\n\nЗапит [${mode}]: «${prompt}»\n\nДодай GEMINI_API_KEY у secrets і перезапусти API щоб активувати повноцінного мультимедійного агента (Gemini 2.0 Flash).`,
+    reply: `${reason}\n\nЗапит [${mode}]: «${prompt}»`,
     model: "fallback",
     mode,
+    keyError: result.error,
+  });
+});
+
+router.get("/nexus/key-status", async (_req, res) => {
+  const [geminiKey, openaiKey, claudeKey, openrouterKey] = await Promise.all([
+    getSecret("GEMINI_API_KEY"), getSecret("OPENAI_API_KEY"),
+    getSecret("ANTHROPIC_API_KEY"), getSecret("OPENROUTER_API_KEY"),
+  ]);
+
+  // Quick probe Gemini to detect expired/invalid key
+  let geminiStatus: "ok" | "expired" | "invalid" | "no_key" = "no_key";
+  let geminiError: string | undefined;
+  if (geminiKey) {
+    const probe = await gemini("ping", "Reply only: pong");
+    if (probe.text) { geminiStatus = "ok"; }
+    else if (probe.error?.includes("expired")) { geminiStatus = "expired"; geminiError = probe.error; }
+    else { geminiStatus = "invalid"; geminiError = probe.error; }
+  }
+
+  res.json({
+    gemini:     { configured: !!geminiKey, status: geminiStatus, error: geminiError },
+    openai:     { configured: !!openaiKey,      status: openaiKey ? "configured" : "no_key" },
+    claude:     { configured: !!claudeKey,      status: claudeKey ? "configured" : "no_key" },
+    openrouter: { configured: !!openrouterKey,  status: openrouterKey ? "configured" : "no_key" },
+    checkedAt: new Date().toISOString(),
   });
 });
 

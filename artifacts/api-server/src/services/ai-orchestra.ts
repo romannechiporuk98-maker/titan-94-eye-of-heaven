@@ -64,10 +64,15 @@ async function callGemini(prompt: string, system: string): Promise<{ text: strin
     path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     headers: { "Content-Type": "application/json" },
     body: {
-      contents: [{ role: "user", parts: [{ text: `${system}\n\n${prompt}` }] }],
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.6, maxOutputTokens: 1024 },
     },
   });
+  // Detect API-level errors (expired key, quota, etc.)
+  if (r?.error) throw new Error(r.error.message || r.error.status || "API error");
+  const finishReason = r?.candidates?.[0]?.finishReason;
+  if (finishReason === "SAFETY") throw new Error("safety block");
   return { text: r?.candidates?.[0]?.content?.parts?.[0]?.text || "" };
 }
 
@@ -109,13 +114,14 @@ async function callOpenRouter(prompt: string, system: string): Promise<{ text: s
   const r = await postJson({
     host: "openrouter.ai",
     path: "/api/v1/chat/completions",
-    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json", "HTTP-Referer": "https://titan-94.replit.app" },
+    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json", "HTTP-Referer": "https://replit.com", "X-Title": "TITAN-94" },
     body: {
-      model: "meta-llama/llama-3.3-70b-instruct",
+      model: "meta-llama/llama-3.3-70b-instruct:free",
       messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
       temperature: 0.6, max_tokens: 1024,
     },
   });
+  if (r?.error) throw new Error(r.error.message || r.error.code || "API error");
   return { text: r?.choices?.[0]?.message?.content || "" };
 }
 
@@ -173,7 +179,9 @@ export async function runOrchestra(input: { prompt: string; system?: string; mod
     const t0 = Date.now();
     try {
       const { text } = await ADAPTERS[id].call(input.prompt, system);
-      return { id, name: ADAPTERS[id].name, status: "ok" as ModelStatus, latencyMs: Date.now() - t0, text: text.trim(), agreement: 0 };
+      const trimmed = text.trim();
+      if (!trimmed) throw new Error("empty response (safety filter or quota)");
+      return { id, name: ADAPTERS[id].name, status: "ok" as ModelStatus, latencyMs: Date.now() - t0, text: trimmed, agreement: 0 };
     } catch (e: any) {
       logger.warn({ id, err: e.message }, "[ORCHESTRA] model failed");
       return { id, name: ADAPTERS[id].name, status: "error" as ModelStatus, latencyMs: Date.now() - t0, text: "", error: e.message, agreement: 0 };

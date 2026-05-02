@@ -372,6 +372,8 @@ const DICT: Dict = {
   "creator.subtitle":     { uk: "Повний доступ — тільки для творця", en: "Full access — creator only", ru: "Полный доступ — только для создателя" },
   "creator.tab.dashboard":{ uk: "Панель",        en: "Dashboard",      ru: "Панель" },
   "creator.tab.ai":       { uk: "AI Інженер",    en: "AI Engineer",    ru: "AI Инженер" },
+  "creator.tab.reserve":  { uk: "Резерв",        en: "Reserve",        ru: "Резерв" },
+  "creator.tab.grant":    { uk: "Грант TON",     en: "TON Grant",      ru: "Грант TON" },
   "creator.tab.settings": { uk: "Налаштування",  en: "Settings",       ru: "Настройки" },
   "creator.tab.menu":     { uk: "Меню",          en: "Menu",           ru: "Меню" },
   "creator.tab.users":    { uk: "Користувачі",   en: "Users",          ru: "Пользователи" },
