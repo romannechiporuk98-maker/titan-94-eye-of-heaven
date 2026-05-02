@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Key, ShieldCheck, ShieldAlert, ExternalLink, Eye, EyeOff,
   Save, Trash2, Loader2, CheckCircle2, AlertCircle, Lock, Settings as SettingsIcon,
+  TrendingUp, Wallet, Zap, RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getTgUser, haptic } from "@/lib/telegram";
@@ -158,6 +159,9 @@ export default function SettingsPage() {
         })}
       </div>
 
+      {/* BINANCE CONNECTION STATUS */}
+      <BinancePanel headers={headers} isCreator={isCreator} />
+
       <div className="titan-card mt-5 text-xs text-muted" style={{ borderColor: "rgba(0,255,255,0.2)" }}>
         <div className="flex gap-2 items-start">
           <SettingsIcon className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -166,6 +170,133 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── BINANCE CONNECTION PANEL ────────────────────────────────────────────────
+function BinancePanel({ headers, isCreator }: { headers: Record<string, string>; isCreator: boolean }) {
+  const { data: status, isLoading, refetch, isFetching } = useQuery<any>({
+    queryKey: ["/binance/status"],
+    queryFn: () => fetch(`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/api/binance/status`, { headers }).then(r => r.json()),
+    enabled: isCreator,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+  const { data: prices } = useQuery<any>({
+    queryKey: ["/binance/prices"],
+    queryFn: () => fetch(`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/api/binance/prices`).then(r => r.json()),
+    refetchInterval: 30_000,
+    enabled: isCreator,
+  });
+  const { data: balance, refetch: refetchBal, isFetching: balFetching } = useQuery<any>({
+    queryKey: ["/binance/balance"],
+    queryFn: () => fetch(`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/api/binance/balance`, { headers }).then(r => r.json()),
+    enabled: isCreator && !!status?.ok,
+    staleTime: 60_000,
+  });
+
+  if (!isCreator) return null;
+
+  const p = prices?.prices || {};
+
+  return (
+    <div className="titan-live-card p-4 mt-5" style={{
+      borderColor: status?.ok ? "rgba(0,255,136,0.4)" : "rgba(255,140,0,0.3)",
+    }}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-amber" />
+          <span className="font-bold text-amber">BINANCE CONNECTION</span>
+          {status?.ok
+            ? <span className="text-[10px] text-safe border border-safe/40 px-1.5 py-0.5">● ONLINE</span>
+            : <span className="text-[10px] text-amber border border-amber/40 px-1.5 py-0.5">○ {status?.configured ? "ERROR" : "NOT CONFIGURED"}</span>}
+        </div>
+        <button onClick={() => { refetch(); refetchBal(); }} disabled={isFetching}
+          className="titan-btn titan-btn-sm text-[10px]">
+          {isFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+        </button>
+      </div>
+
+      {isLoading && <div className="text-center py-4"><Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" /></div>}
+
+      {!isLoading && !status?.configured && (
+        <div className="text-xs text-muted p-3 border border-amber/20 bg-amber/5">
+          Додай <code className="text-amber">BINANCE_API_KEY</code> та <code className="text-amber">BINANCE_API_SECRET</code> вище, щоб активувати Binance трейдинг.
+        </div>
+      )}
+
+      {status?.configured && (
+        <>
+          {/* Ping info */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="text-center p-2 border" style={{ borderColor: "rgba(0,255,136,0.2)" }}>
+              <div className="text-[10px] text-muted">LATENCY</div>
+              <div className="text-lg font-bold text-safe">{status?.latencyMs ? `${status.latencyMs}ms` : "—"}</div>
+            </div>
+            <div className="text-center p-2 border" style={{ borderColor: "rgba(0,255,136,0.2)" }}>
+              <div className="text-[10px] text-muted">STATUS</div>
+              <div className={`text-lg font-bold ${status?.ok ? "text-safe" : "text-red-400"}`}>{status?.ok ? "OK" : "FAIL"}</div>
+            </div>
+          </div>
+
+          {status?.error && (
+            <div className="text-xs text-red-400 p-2 border border-red-400/30 bg-red-400/5 mb-4">{status.error}</div>
+          )}
+
+          {/* Live prices */}
+          <div className="mb-4">
+            <div className="text-[10px] text-muted tracking-widest mb-2">LIVE PRICES · BINANCE CEX</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { sym: "TONUSDT", label: "TON", col: "#00FFFF" },
+                { sym: "BTCUSDT", label: "BTC", col: "#FF8C00" },
+                { sym: "ETHUSDT", label: "ETH", col: "#9B5CFF" },
+                { sym: "BNBUSDT", label: "BNB", col: "#FFD43A" },
+              ].map(({ sym, label, col }) => (
+                <div key={sym} className="text-center p-2 border" style={{ borderColor: col + "33" }}>
+                  <div className="text-[10px] font-bold" style={{ color: col }}>{label}</div>
+                  <div className="text-sm font-mono mt-0.5" style={{ color: col }}>
+                    {p[sym] ? `$${p[sym].toFixed(sym === "TONUSDT" ? 4 : 0)}` : "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Account balance */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] text-muted tracking-widest flex items-center gap-1">
+                <Wallet className="w-3 h-3" /> SPOT ACCOUNT BALANCE
+              </div>
+              {balFetching && <Loader2 className="w-3 h-3 animate-spin text-muted" />}
+            </div>
+            {balance?.ok && balance.balances?.length > 0 ? (
+              <div className="space-y-1.5">
+                {balance.balances.slice(0, 8).map((b: any) => (
+                  <div key={b.asset} className="flex justify-between text-xs p-2 border" style={{ borderColor: "rgba(0,255,255,0.12)" }}>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-3 h-3 text-amber" />
+                      <span className="font-bold text-amber">{b.asset}</span>
+                      {parseFloat(b.locked) > 0 && <span className="text-[9px] text-muted">({parseFloat(b.locked).toFixed(4)} locked)</span>}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-safe">{parseFloat(b.free).toFixed(4)}</span>
+                      {b.usdtValue > 0 && <span className="text-[10px] text-muted ml-1">≈${b.usdtValue.toFixed(2)}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : balance?.ok && balance.balances?.length === 0 ? (
+              <div className="text-xs text-muted p-2">Баланс нульовий або всі активи &lt; $0.01</div>
+            ) : balance?.error ? (
+              <div className="text-xs text-red-400 p-2">{balance.error}</div>
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
 }

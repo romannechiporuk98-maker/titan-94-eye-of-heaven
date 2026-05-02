@@ -25,6 +25,7 @@ import autotradeRouter     from "./autotrade";
 import secretsRouter       from "./secrets";
 import mirrorRouter        from "./mirror";
 import vaultRouter         from "./vault";
+import binanceRouter       from "./binance";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use(autotradeRouter);
 router.use(secretsRouter);
 router.use(mirrorRouter);
 router.use(vaultRouter);
+router.use(binanceRouter);
 
 export default router;

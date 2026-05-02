@@ -83,6 +83,7 @@ export default function AutoTradePage() {
             <div className="text-3xl font-bold text-safe titan-counter" key={price?.ton_usdt}>${price?.ton_usdt?.toFixed(4) || "—"}</div>
             <div className="text-[10px] text-muted">STON.fi ${price?.stonfi_ton_usdt?.toFixed(4) || "—"}</div>
             <div className="text-[10px] text-muted">DeDust ${price?.dedust_ton_usdt?.toFixed(4) || "—"}</div>
+            {price?.binance_ton_usdt && <div className="text-[10px] text-amber">Binance ${price.binance_ton_usdt?.toFixed(4)}</div>}
             <div className="text-[10px] text-amber">spread {price?.spread_bps?.toFixed(0) || 0} bps</div>
           </div>
         </div>

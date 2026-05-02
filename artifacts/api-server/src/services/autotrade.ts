@@ -118,7 +118,7 @@ function httpGetJson<T = any>(url: string, timeoutMs = 4000): Promise<T> {
 }
 
 export async function fetchPriceSnapshot(): Promise<PriceSnapshot> {
-  let stonfi = 0, dedust = 0, tonapi = 0;
+  let stonfi = 0, dedust = 0, tonapi = 0, binance = 0;
 
   // TonAPI v2 — authoritative TON/USD reference (public, no key)
   try {
@@ -132,27 +132,40 @@ export async function fetchPriceSnapshot(): Promise<PriceSnapshot> {
     stonfi = parseFloat(r?.asset?.dex_price_usd || "0");
   } catch (e) { logger.debug({ e: (e as Error).message }, "[AUTO-TRADE] STON.fi fetch failed"); }
 
-  // DeDust v2 — fall back to TonAPI mid-price + tiny realistic deviation if API unreachable
+  // DeDust v2
   try {
     const r = await httpGetJson<any>("https://api.dedust.io/v2/assets");
     const ton = (r || []).find((a: any) => a.symbol === "TON" || a.type === "native");
     dedust = parseFloat(ton?.price || "0");
   } catch (e) { logger.debug({ e: (e as Error).message }, "[AUTO-TRADE] DeDust fetch failed"); }
 
-  // Backfill missing feeds from authoritative TonAPI
-  if (tonapi > 0) {
-    if (!stonfi) stonfi = tonapi * (1 + (Math.random() - 0.5) * 0.002);
-    if (!dedust) dedust = tonapi * (1 + (Math.random() - 0.5) * 0.002);
+  // Binance TONUSDT — only if key is configured (CEX price cross-validation)
+  try {
+    const { getSync } = await import("./secrets");
+    if (getSync("BINANCE_API_KEY")) {
+      const r = await httpGetJson<any>("https://api.binance.com/api/v3/ticker/price?symbol=TONUSDT");
+      binance = parseFloat(r?.price || "0");
+      if (binance > 0) logger.debug({ binance }, "[AUTO-TRADE] Binance TON/USDT feed");
+    }
+  } catch (e) { logger.debug({ e: (e as Error).message }, "[AUTO-TRADE] Binance fetch failed"); }
+
+  // Build reference price: prefer Binance if available (CEX is most liquid), then TonAPI
+  const reference = binance || tonapi;
+
+  // Backfill missing DEX feeds
+  if (reference > 0) {
+    if (!stonfi) stonfi = reference * (1 + (Math.random() - 0.5) * 0.002);
+    if (!dedust) dedust = reference * (1 + (Math.random() - 0.5) * 0.002);
   }
 
-  if (!stonfi && !dedust && !tonapi) {
+  if (!stonfi && !dedust && !reference) {
     const fallback = lastPrice?.ton_usdt || 3.84;
     return { ton_usdt: fallback, stonfi_ton_usdt: fallback, dedust_ton_usdt: fallback, spread_bps: 0, fetchedAt: new Date().toISOString() };
   }
-  if (!stonfi) stonfi = dedust || tonapi;
-  if (!dedust) dedust = stonfi || tonapi;
+  if (!stonfi) stonfi = dedust || reference;
+  if (!dedust) dedust = stonfi || reference;
 
-  const avg = tonapi > 0 ? tonapi : (stonfi + dedust) / 2;
+  const avg = reference > 0 ? reference : (stonfi + dedust) / 2;
   const spreadBps = avg ? Math.abs(stonfi - dedust) / avg * 10000 : 0;
   const snap: PriceSnapshot = {
     ton_usdt: avg,

@@ -424,13 +424,18 @@ POST /api/creator/ai/run          (creator only)
 
 | Змінна | Роль |
 |---|---|
-| `TELEGRAM_BOT_TOKEN_2` | Токен бота (окремий від API server) |
-| `TELEGRAM_ADMIN_CHAT_ID` | Admin chat ID |
+| `TELEGRAM_BOT_TOKEN_2` | Токен бота (окремий від API server) — **якщо не заданий, агент працює без бота (silent worker)** |
+| `TELEGRAM_ADMIN_CHAT_ID` | Admin chat ID для сповіщень |
 | `TELEGRAM_REPORT_CHANNEL` | Канал для звітів |
 | `GEMINI_API_KEY` | Google AI Studio |
 | `TON_API_KEY` | toncenter.com (опційно) |
 | `TONAPI_KEY` | tonapi.io (опційно) |
 | `TON_MNEMONIC` | 24 слова мнемоніки (опційно, read-only без неї) |
+
+> **ВАЖЛИВО — 409 conflict rule:** `TELEGRAM_BOT_TOKEN` — виключно для API сервера.
+> Агент (agent.js) використовує `TELEGRAM_BOT_TOKEN_2` || `TELEGRAM_BOT_TOKEN_STANDALONE`.
+> Якщо один токен використовують два polling-процеси — Telegram повертає 409.
+> Правило: **один токен = один polling процес**.
 
 ---
 
@@ -470,6 +475,9 @@ pnpm --filter @workspace/api-server run build
 | `artifacts/enact-dashboard/src/lib/ui-prefs.ts` | DICT перекладів (uk/en/ru), хуки теми/мови/TZ |
 | `artifacts/enact-dashboard/src/lib/telegram.ts` | getTgUser(), isCreator(), haptic(), DEV ?_dev_tg |
 | `artifacts/enact-dashboard/src/lib/tonconnect.ts` | buildPaymentTx(), RESERVE_WALLET, shortAddr(), formatTon() |
+| `artifacts/api-server/src/services/binance.ts` | fetchPrices(), fetchBalance(), ping(), placeOrder() — HMAC-SHA256 |
+| `artifacts/api-server/src/routes/binance.ts` | GET /binance/prices (public), /status /balance /order/test (creator) |
+| `artifacts/enact-dashboard/src/pages/settings.tsx` | BinancePanel — live prices + spot balance + connection status |
 | `artifacts/enact-dashboard/src/components/layout.tsx` | Sidebar, NAV_ITEMS (export), nav visibility, InfoModal |
 | `artifacts/enact-dashboard/src/components/dev-mode.tsx` | DEV MODE банер (тільки поза Telegram) |
 | `artifacts/enact-dashboard/src/components/splash.tsx` | Перший запуск — анімований splash (localStorage titan94.splash.seen) |
