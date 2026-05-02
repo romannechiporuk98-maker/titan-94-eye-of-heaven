@@ -110,7 +110,7 @@ export default function EarnPage() {
           toAddress: RESERVE_WALLET,
           amountNano: String((plan === "pro" ? 5 : 20) * 1e9),
           telegramId: TG_ID,
-          comment: `tg:${TG_ID}:${plan}`,
+          comment: `TITAN94_${TG_ID}_${plan}`,
         }),
       }).catch(() => {});
       haptic("success");

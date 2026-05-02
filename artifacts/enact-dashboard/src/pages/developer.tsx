@@ -42,11 +42,7 @@ export default function DeveloperPage() {
     setPaying(true);
     haptic("medium");
     try {
-      // Build a custom tx for developer plan amount
-      const tx = {
-        validUntil: Math.floor(Date.now() / 1000) + 600,
-        messages: [{ address: RESERVE_WALLET, amount: String(price * 1e9) }],
-      };
+      const tx = buildPaymentTx("developer", tg.id, price);
       const result = await tonConnectUI.sendTransaction(tx);
       await fetch(api("/webhook/ton-payment"), {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -56,7 +52,7 @@ export default function DeveloperPage() {
           toAddress: RESERVE_WALLET,
           amountNano: String(price * 1e9),
           telegramId: tg.id,
-          comment: `tg:${tg.id}:developer`,
+          comment: `TITAN94_${tg.id}_developer`,
         }),
       }).catch(() => {});
       haptic("success");

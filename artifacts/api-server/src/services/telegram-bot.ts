@@ -89,11 +89,40 @@ export function initTelegramBot(): Bot | null {
 
   bot = new Bot(TOKEN);
 
-  // /start — handles ref code from deep link
+  // /start — handles: ref links, Stars payment deep links, plain welcome
   bot.command("start", async (ctx) => {
     const { id, name } = fmtUser(ctx);
-    const args  = ctx.match?.toString().trim() || "";
-    const refId = args.startsWith("ref") ? args.slice(3).replace(/^_/, "") : (args.startsWith("ref_") ? args.slice(4) : "");
+    const args = ctx.match?.toString().trim() || "";
+
+    // ── Stars payment: /start stars_pro_750 or stars_elite_3000 ──────────────
+    const starsMatch = args.match(/^stars[_-](\w+)[_-](\d+)$/i);
+    if (starsMatch) {
+      const planKey = starsMatch[1].toLowerCase();
+      const starsRequested = parseInt(starsMatch[2]);
+      const STARS_PLANS_LOCAL: Record<string, { label: string; plan: "pro" | "elite"; stars: number; desc: string }> = {
+        pro:   { label: "TITAN-94 PRO",   plan: "pro",   stars: 750,  desc: "Unlimited scans · arbitrage signals · 0.072 TON/day auto-earn · 30 days" },
+        elite: { label: "TITAN-94 ELITE", plan: "elite", stars: 3000, desc: "Everything in PRO + sniper alerts · whale monitoring · 0.24 TON/day auto-earn · 30 days" },
+      };
+      const def = STARS_PLANS_LOCAL[planKey];
+      if (def) {
+        const starsCount = starsRequested || def.stars;
+        try {
+          await ctx.replyWithInvoice(
+            def.label, def.desc,
+            JSON.stringify({ tgId: id, plan: def.plan, name }),
+            "XTR",
+            [{ label: def.label, amount: starsCount }],
+          );
+        } catch (e: any) {
+          logger.error({ err: e.message }, "[TG-BOT] Stars invoice error");
+          await ctx.reply(`❌ Invoice failed: ${e.message}\n\nFallback: pay to reserve wallet:\n\`${RESERVE}\``, { parse_mode: "Markdown" });
+        }
+        return;
+      }
+    }
+
+    // ── Referral: /start ref<id> or /start ref_<id> ──────────────────────────
+    const refId = args.startsWith("ref_") ? args.slice(4) : args.startsWith("ref") ? args.slice(3) : "";
 
     // Auto-register subscriber
     const existing = await store.getSubscriber(id);
@@ -314,6 +343,90 @@ ${refId ? `\n✅ Ти зайшов за рефералом *${refId}* — отр
   bot.callbackQuery("help",      (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/help",   entities: [{ type: "bot_command", offset: 0, length: 5 }] } } as any).catch(() => {}); });
   bot.callbackQuery("agents",    (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/agents", entities: [{ type: "bot_command", offset: 0, length: 7 }] } } as any).catch(() => {}); });
   bot.callbackQuery("status",    (ctx) => { ctx.answerCallbackQuery(); return bot!.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message!, text: "/status", entities: [{ type: "bot_command", offset: 0, length: 7 }] } } as any).catch(() => {}); });
+
+  // ─── Telegram Stars Payments ────────────────────────────────────────────────
+  // Stars flow handled inside /start → sendInvoice → pre_checkout_query → successful_payment
+
+  // Answer pre-checkout immediately (required within 10 seconds)
+  bot.on("pre_checkout_query", async (ctx) => {
+    try {
+      await ctx.answerPreCheckoutQuery(true);
+    } catch (e: any) {
+      logger.error({ err: e.message }, "[TG-BOT] pre_checkout_query error");
+      try { await ctx.answerPreCheckoutQuery(false, "Internal error. Please try again."); } catch {}
+    }
+  });
+
+  // Handle successful Stars payment → activate plan
+  bot.on("message:successful_payment", async (ctx) => {
+    const payment = ctx.message.successful_payment;
+    if (!payment) return;
+
+    const { id, name } = fmtUser(ctx);
+    let plan: "pro" | "elite" = "pro";
+    let tgId = id;
+
+    try {
+      const payload = JSON.parse(payment.invoice_payload);
+      if (payload.plan) plan = payload.plan;
+      if (payload.tgId) tgId = String(payload.tgId);
+    } catch {
+      // fallback: determine plan from stars amount
+      if (payment.total_amount >= 3000) plan = "elite";
+    }
+
+    const stars = payment.total_amount;
+    const expiresAt = new Date(Date.now() + 30 * 86400000);
+
+    try {
+      const existing = await store.getSubscriber(tgId);
+      await store.upsertSubscriber({
+        telegramId: tgId,
+        username: name,
+        plan,
+        isActive: true,
+        expiresAt,
+        tonAddress: existing?.tonAddress || null,
+        referredBy: existing?.referredBy ?? null,
+      });
+
+      await store.ledgerInsert({
+        telegramId: tgId,
+        type: "subscription",
+        amountTon: 0,
+        description: `${plan.toUpperCase()} via ${stars} Telegram Stars`,
+        txHash: `stars_${payment.telegram_payment_charge_id || Date.now()}`,
+      });
+
+      await store.logActivity(
+        "FINANCE",
+        `${plan.toUpperCase()} activated via Stars`,
+        `${tgId} (${name}) paid ${stars} ⭐ — plan active until ${expiresAt.toLocaleDateString()}`,
+        "success",
+        { telegramId: tgId, plan, stars },
+      );
+
+      // Also call API to ensure consistency across services
+      try {
+        await fetch(`http://localhost:${process.env["PORT"] || 8080}/api/monetization/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-internal-key": process.env["INTERNAL_WEBHOOK_KEY"] || "" },
+          body: JSON.stringify({ telegram_id: tgId, plan, username: name, stars_payment: true }),
+        });
+      } catch { /* already saved via store directly above */ }
+
+      await ctx.reply(
+        `🌟 *${plan.toUpperCase()} activated!*\n\n` +
+        `Thank you for ${stars} ⭐ Stars!\n` +
+        `Your ${plan.toUpperCase()} plan is active until *${expiresAt.toLocaleDateString()}*.\n\n` +
+        `Open the dashboard to start:`,
+        { parse_mode: "Markdown", reply_markup: mainMenu() },
+      );
+    } catch (e: any) {
+      logger.error({ err: e.message, tgId, plan }, "[TG-BOT] Stars activation failed");
+      await ctx.reply(`❌ Payment received but activation failed. Please contact support with charge ID: ${payment.telegram_payment_charge_id}`);
+    }
+  });
 
   bot.catch((err) => logger.error({ err: err.error }, "[TG-BOT] handler error"));
   return bot;
