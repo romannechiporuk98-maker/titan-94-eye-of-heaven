@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   Eye, Shield, Brain, DollarSign, Activity, Zap, TrendingUp, Cpu,
-  Radio, Wifi, Database, Bot, Globe, WifiOff,
+  Radio, Wifi, Database, Bot, Globe, WifiOff, Lock, Coins,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useTonAddress } from "@tonconnect/ui-react";
 import {
   AreaChart, Area, ComposedChart, Bar, Line, RadialBarChart, RadialBar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PolarAngleAxis,
@@ -32,6 +33,7 @@ function useNow() {
 
 export default function CommandCenter() {
   const now = useNow();
+  const tonAddress          = useTonAddress();
   const { data: stats }    = usePoll<any>("/agent/stats", 4000);
   const { data: cycles }   = usePoll<any>("/agent/cycles", 4000);
   const { data: act }      = usePoll<any>("/activity?limit=10", 5000);
@@ -40,6 +42,7 @@ export default function CommandCenter() {
   const { data: vulns }    = usePoll<any>("/vulnerabilities?limit=8", 10000);
   const { data: bot }      = usePoll<any>("/health/bot", 30000);
   const { data: tonInfra } = usePoll<any>("/ton/infra-status", 60000);
+  const { data: chain }    = usePoll<any>("/ton/chain-stats", 20000);
 
   const accuracy = stats?.accuracy ? Number(stats.accuracy) * 100 : 0;
   const uptimeSec = stats?.uptime ? Number(stats.uptime) : 0;
@@ -84,13 +87,13 @@ export default function CommandCenter() {
       }}>
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-[10px] tracking-[0.4em] text-primary/70 mb-1">PROTOCOL TITAN-94 · v4.0 · DEI GRATIA</div>
+            <div className="text-[10px] tracking-[0.4em] text-primary/70 mb-1">© DEI GRATIA · ROMAN · v4.0 · PROTOCOL 94 · TON MAINNET</div>
             <h1 className="text-3xl font-bold" style={{
               background: "linear-gradient(90deg, #00FFFF, #00FF88, #FF8C00)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-            }}>◈ ОКО НЕБЕСНЕ — COMMAND CENTER</h1>
-            <p className="text-xs text-muted mt-1">Sovereign autonomous AI guardian of the TON ecosystem</p>
+            }}>◈ PROTOCOL 94 · NEURAL CORE</h1>
+            <p className="text-xs text-muted mt-1">Серце TITAN-94 · суверенна AI нейромережа · захищено авторським правом · неможливо захопити</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-mono font-bold text-primary titan-counter" key={now.getSeconds()}>
@@ -106,18 +109,17 @@ export default function CommandCenter() {
 
         {/* Mini status strip */}
         <div className="flex flex-wrap gap-3 mt-4 text-[10px]">
-          <StatusPill icon={Radio}   label="TON-POLLER"  ok={true} extra={`block #${stats?.lastBlockSeqno || "—"}`} />
-          <StatusPill icon={Brain}   label="GEMINI"      ok={true} extra="2.5 Flash" />
-          <StatusPill icon={Bot}     label="TG-BOT"      ok={!!bot?.online} extra={bot?.online ? "polling" : "no token"} />
-          <StatusPill icon={Database} label="POSTGRES"   ok={true} extra="connected" />
-          <StatusPill icon={Wifi}    label="HEARTBEAT"   ok={true} extra={`${uptimeH}h ${uptimeM}m`} />
+          <StatusPill icon={Radio}    label="TON-POLLER"   ok={true} extra={chain ? `#${chain.seqno?.toLocaleString()}` : `#${stats?.lastBlockSeqno || "—"}`} />
+          <StatusPill icon={Brain}    label="GEMINI"       ok={true} extra="2.5 Flash" />
+          <StatusPill icon={Bot}      label="TG-BOT"       ok={!!bot?.online} extra={bot?.online ? "polling" : "no token"} />
+          <StatusPill icon={Database} label="POSTGRES"     ok={true} extra="connected" />
+          <StatusPill icon={Wifi}     label="HEARTBEAT"    ok={true} extra={`${uptimeH}h ${uptimeM}m`} />
+          <StatusPill icon={Lock}     label="TON CONNECT"  ok={!!tonAddress} extra={tonAddress ? `${tonAddress.slice(0,4)}…${tonAddress.slice(-4)}` : "disconnected"} />
+          {chain && (
+            <StatusPill icon={Coins}  label="TON PRICE"    ok={true} extra={chain.price?.usd ? `$${chain.price.usd.toFixed(2)}` : "—"} />
+          )}
           {tonInfra && (
-            <StatusPill
-              icon={Globe}
-              label="TON NETWORK"
-              ok={tonInfra.overallStatus === "operational" || tonInfra.overallStatus === "degraded"}
-              extra={`${tonInfra.onlineCount}/${tonInfra.totalCount} up`}
-            />
+            <StatusPill icon={Globe}  label="TON NETWORK"  ok={tonInfra.overallStatus === "operational" || tonInfra.overallStatus === "degraded"} extra={`${tonInfra.onlineCount}/${tonInfra.totalCount} up`} />
           )}
         </div>
       </div>
@@ -291,15 +293,15 @@ export default function CommandCenter() {
         <div className="titan-live-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Eye className="w-4 h-4 text-amber" />
-            <span className="text-xs font-bold text-amber tracking-widest">TON ECOSYSTEM</span>
+            <span className="text-xs font-bold text-amber tracking-widest">TON LIVE · BLOCKCHAIN</span>
           </div>
           <div className="space-y-2">
-            <Stat label="Network"           value={eco?.blockchain?.network || "TON Mainnet"}        color="#00FFFF" />
-            <Stat label="Last Seqno"        value={`#${eco?.blockchain?.lastSeqno || stats?.lastBlockSeqno || "—"}`}  color="#00FF88" />
-            <Stat label="Knowledge Size"    value={`${eco?.database?.knowledgeSize ?? 0} patterns`}  color="#FF8C00" />
-            <Stat label="DB Activity"       value={`${eco?.database?.activityCount ?? 0} events`}    color="#9B5CFF" />
-            <Stat label="Active Engines"    value={`${(eco?.agents || []).filter((a: any) => a.status === "active").length}/${(eco?.agents || []).length}`} color="#00FFFF" />
-            <Stat label="At-Risk TVL"       value={`$${parseFloat(stats?.threats?.tvlAtRisk || "0").toLocaleString()}`} color="#FF3355" />
+            <Stat label="Block #"       value={chain?.seqno ? `#${chain.seqno.toLocaleString()}` : `#${eco?.blockchain?.lastSeqno || "—"}`} color="#00FFFF" />
+            <Stat label="Validators"    value={chain?.validators ? `${chain.validators} active` : "—"}                color="#00FF88" />
+            <Stat label="TON / USD"     value={chain?.price?.usd ? `$${chain.price.usd.toFixed(4)}` : "—"}            color="#FF8C00" />
+            <Stat label="TON / UAH"     value={chain?.price?.uah ? `₴${chain.price.uah.toFixed(2)}` : "—"}            color="#9B5CFF" />
+            <Stat label="24h"           value={chain?.price?.diff24h ?? "—"}                                           color={chain?.price?.diff24h?.startsWith("+") ? "#00FF88" : "#FF3355"} />
+            <Stat label="At-Risk TVL"   value={`$${parseFloat(stats?.threats?.tvlAtRisk || "0").toLocaleString()}`}   color="#FF3355" />
           </div>
         </div>
 

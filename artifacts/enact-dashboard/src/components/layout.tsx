@@ -9,6 +9,7 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { TonConnectButton, useTonAddress, useTonWallet } from "@tonconnect/ui-react";
 import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
@@ -131,6 +132,44 @@ function InfoModal({ item, lang, onClose }: { item: NavItem; lang: Lang; onClose
           {t("info.close", lang)}
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ── TON Wallet Connection Chip ──────────────────────────────────────────── */
+function TonWalletChip({ compact = false }: { compact?: boolean }) {
+  const address    = useTonAddress();
+  const wallet     = useTonWallet();
+  const short      = address ? `${address.slice(0, 4)}…${address.slice(-4)}` : null;
+  const deviceName = (wallet as any)?.device?.appName ?? null;
+
+  if (!address) {
+    return (
+      <div style={{ "--tc-button-background": "transparent" } as any}>
+        <TonConnectButton
+          style={{
+            "--tc-button-background":     "transparent",
+            "--tc-button-border-radius":  "4px",
+            "--tc-button-font-size":      compact ? "9px" : "10px",
+          } as any}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 border rounded"
+      style={{
+        borderColor: "rgba(0,255,255,0.35)",
+        background: "rgba(0,255,255,0.06)",
+        fontFamily: "'Space Mono', monospace",
+        fontSize: compact ? "9px" : "10px",
+      }}>
+      <span style={{ color: "#00FFFF" }}>◈</span>
+      <span className="font-bold" style={{ color: "#00FF88" }}>{short}</span>
+      {deviceName && !compact && (
+        <span className="opacity-50" style={{ color: "rgba(207,255,255,0.6)" }}>· {deviceName}</span>
+      )}
     </div>
   );
 }
@@ -380,7 +419,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <div className="mt-2 text-center" style={{ color: "rgba(207,255,255,0.25)", fontSize: "10px" }}>
-          v4.0 · DEI GRATIA Роман
+          v4.0 · © DEI GRATIA · Роман
+        </div>
+        <div className="text-center mt-0.5" style={{ color: "rgba(0,255,255,0.15)", fontSize: "9px" }}>
+          Всі права захищені · TON Mainnet
         </div>
       </div>
     </>
@@ -436,6 +478,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-[8px] tracking-widest leading-tight mt-0.5" style={{ color: "rgba(0,255,255,0.4)" }}>{t("tag.security", lang)}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <TonWalletChip compact />
             <PrefsCluster compact />
             <div className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
@@ -445,8 +488,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* DESKTOP TOP BAR */}
-        <div className="hidden md:flex h-10 items-center justify-end px-4 border-b shrink-0 z-40"
+        <div className="hidden md:flex h-10 items-center justify-end px-4 border-b shrink-0 z-40 gap-2"
           style={{ background: "rgba(6,15,26,0.6)", borderColor: "rgba(0,255,255,0.1)" }}>
+          <TonWalletChip />
           <PrefsCluster />
         </div>
 

@@ -117,7 +117,7 @@ type Dict = Record<string, Partial<Record<Lang, string>>>;
 
 const DICT: Dict = {
   // ── Navigation labels ──────────────────────────────────────────────
-  "nav.command":   { uk: "Командний центр",  en: "Command Center",  ru: "Командный центр",  de: "Kontrollzentrum",   tr: "Komuta Merkezi",   zh: "指挥中心" },
+  "nav.command":   { uk: "PROTOCOL 94",      en: "PROTOCOL 94",     ru: "PROTOCOL 94",      de: "PROTOCOL 94",       tr: "PROTOCOL 94",      zh: "PROTOCOL 94" },
   "nav.threats":   { uk: "Загрози",          en: "Threats",         ru: "Угрозы",           de: "Bedrohungen",       tr: "Tehditler",        zh: "威胁" },
   "nav.contracts": { uk: "Смартконтракти",   en: "Smart Contracts", ru: "Смартконтракты",   de: "Smart Contracts",   tr: "Akıllı Sözleşme", zh: "智能合约" },
   "nav.analyze":   { uk: "Нейрохаб",         en: "Neural Hub",      ru: "Нейрохаб",         de: "Neuraler Hub",      tr: "Sinir Merkezi",    zh: "神经中枢" },
