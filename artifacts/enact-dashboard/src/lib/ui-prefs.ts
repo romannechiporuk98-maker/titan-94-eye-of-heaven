@@ -8,7 +8,7 @@
 import { useEffect, useState, useCallback } from "react";
 
 export type Theme = "dark" | "light";
-export type Lang  = "uk" | "en" | "ru";
+export type Lang  = "uk" | "en" | "ru" | "de" | "tr" | "zh";
 export type Tz    = "auto" | "Europe/Kyiv" | "UTC" | "Europe/London" | "America/New_York" | "Asia/Singapore";
 
 const THEME_KEY = "titan94.theme";
@@ -33,9 +33,13 @@ function readTheme(): Theme {
 function readLang(): Lang {
   if (typeof window === "undefined") return "uk";
   const v = localStorage.getItem(LANG_KEY);
-  if (v === "en" || v === "ru" || v === "uk") return v;
+  const LANGS: Lang[] = ["uk", "en", "ru", "de", "tr", "zh"];
+  if (v && LANGS.includes(v as Lang)) return v as Lang;
   const nav = navigator.language?.toLowerCase() || "";
   if (nav.startsWith("ru")) return "ru";
+  if (nav.startsWith("de")) return "de";
+  if (nav.startsWith("tr")) return "tr";
+  if (nav.startsWith("zh")) return "zh";
   if (nav.startsWith("en")) return "en";
   return "uk";
 }
@@ -108,30 +112,33 @@ export function fmtClock(input: Date | string | number, tz: Tz): string {
 }
 
 // ── Translation dictionary ─────────────────────────────────────────────
-type Dict = Record<string, Record<Lang, string>>;
+// Each entry may omit new language codes — t() falls back to "en" then "uk".
+type Dict = Record<string, Partial<Record<Lang, string>>>;
 
 const DICT: Dict = {
   // ── Navigation labels ──────────────────────────────────────────────
-  "nav.command":   { uk: "Командний центр",  en: "Command Center",  ru: "Командный центр" },
-  "nav.threats":   { uk: "Загрози",          en: "Threats",         ru: "Угрозы" },
-  "nav.contracts": { uk: "Смартконтракти",   en: "Smart Contracts", ru: "Смартконтракты" },
-  "nav.analyze":   { uk: "Нейрохаб",         en: "Neural Hub",      ru: "Нейрохаб" },
-  "nav.evolution": { uk: "Еволюція",         en: "Evolution",       ru: "Эволюция" },
-  "nav.immune":    { uk: "Імунна система",   en: "Immune System",   ru: "Иммунная система" },
-  "nav.analytics": { uk: "Аналітика",        en: "Analytics",       ru: "Аналитика" },
-  "nav.status":    { uk: "Статус агента",    en: "Agent Status",    ru: "Статус агента" },
-  "nav.earn":      { uk: "Заробіток",        en: "Earnings",        ru: "Заработок" },
-  "nav.autotrade": { uk: "Авто-трейд",       en: "Auto-Trade",      ru: "Авто-трейд" },
-  "nav.builder":   { uk: "Кузня агентів",    en: "Agent Forge",     ru: "Кузня агентов" },
-  "nav.developer": { uk: "Режим розробника", en: "Developer Mode",  ru: "Режим разработчика" },
-  "nav.nexus":     { uk: "NEXUS AI",         en: "NEXUS AI",        ru: "NEXUS AI" },
-  "nav.settings":  { uk: "API Сейф",         en: "API Vault",       ru: "API Сейф" },
-  "nav.vault":     { uk: "Мобільний сейф",   en: "Mobile Vault",    ru: "Мобильный сейф" },
-  "nav.access":    { uk: "Тарифи доступу",   en: "Access Tiers",    ru: "Тарифы доступа" },
-  "nav.enact":     { uk: "ENACT огляд",      en: "ENACT Overview",  ru: "ENACT обзор" },
-  "nav.jobs":      { uk: "Робочі завдання",  en: "Job Explorer",    ru: "Задания" },
-  "nav.create":    { uk: "Створити завдання",en: "Create Job",      ru: "Создать задание" },
-  "nav.creator":   { uk: "Творець",          en: "Creator",         ru: "Создатель" },
+  "nav.command":   { uk: "Командний центр",  en: "Command Center",  ru: "Командный центр",  de: "Kontrollzentrum",   tr: "Komuta Merkezi",   zh: "指挥中心" },
+  "nav.threats":   { uk: "Загрози",          en: "Threats",         ru: "Угрозы",           de: "Bedrohungen",       tr: "Tehditler",        zh: "威胁" },
+  "nav.contracts": { uk: "Смартконтракти",   en: "Smart Contracts", ru: "Смартконтракты",   de: "Smart Contracts",   tr: "Akıllı Sözleşme", zh: "智能合约" },
+  "nav.analyze":   { uk: "Нейрохаб",         en: "Neural Hub",      ru: "Нейрохаб",         de: "Neuraler Hub",      tr: "Sinir Merkezi",    zh: "神经中枢" },
+  "nav.evolution": { uk: "Еволюція",         en: "Evolution",       ru: "Эволюция",         de: "Evolution",         tr: "Evrim",            zh: "进化" },
+  "nav.immune":    { uk: "Імунна система",   en: "Immune System",   ru: "Иммунная система", de: "Immunsystem",       tr: "Bağışıklık",       zh: "免疫系统" },
+  "nav.analytics": { uk: "Аналітика",        en: "Analytics",       ru: "Аналитика",        de: "Analytik",          tr: "Analitik",         zh: "数据分析" },
+  "nav.status":    { uk: "Статус агента",    en: "Agent Status",    ru: "Статус агента",    de: "Agentenstatus",     tr: "Ajan Durumu",      zh: "代理状态" },
+  "nav.earn":      { uk: "Заробіток",        en: "Earnings",        ru: "Заработок",        de: "Einnahmen",         tr: "Kazançlar",        zh: "收益" },
+  "nav.autotrade": { uk: "Авто-трейд",       en: "Auto-Trade",      ru: "Авто-трейд",       de: "Auto-Trading",      tr: "Otomatik Ticaret", zh: "自动交易" },
+  "nav.builder":   { uk: "Кузня агентів",    en: "Agent Forge",     ru: "Кузня агентов",    de: "Agenten-Forge",     tr: "Ajan Atölyesi",    zh: "代理锻造" },
+  "nav.developer": { uk: "Режим розробника", en: "Developer Mode",  ru: "Режим разработчика",de: "Entwicklermodus",  tr: "Geliştirici Modu", zh: "开发者模式" },
+  "nav.nexus":     { uk: "NEXUS AI",         en: "NEXUS AI",        ru: "NEXUS AI",         de: "NEXUS AI",          tr: "NEXUS AI",         zh: "NEXUS AI" },
+  "nav.settings":  { uk: "API Сейф",         en: "API Vault",       ru: "API Сейф",         de: "API-Tresor",        tr: "API Kasası",       zh: "API 密钥库" },
+  "nav.vault":     { uk: "Мобільний сейф",   en: "Mobile Vault",    ru: "Мобильный сейф",   de: "Mobile Tresor",     tr: "Mobil Kasa",       zh: "移动金库" },
+  "nav.access":    { uk: "Тарифи доступу",   en: "Access Tiers",    ru: "Тарифы доступа",   de: "Zugangsstufen",     tr: "Erişim Planları",  zh: "访问套餐" },
+  "nav.enact":     { uk: "ENACT огляд",      en: "ENACT Overview",  ru: "ENACT обзор",      de: "ENACT Übersicht",   tr: "ENACT Genel",      zh: "ENACT 概览" },
+  "nav.jobs":      { uk: "Робочі завдання",  en: "Job Explorer",    ru: "Задания",          de: "Aufgaben",          tr: "Görevler",         zh: "任务列表" },
+  "nav.create":    { uk: "Створити завдання",en: "Create Job",      ru: "Создать задание",  de: "Aufgabe erstellen", tr: "Görev Oluştur",    zh: "创建任务" },
+  "nav.creator":   { uk: "Творець",          en: "Creator",         ru: "Создатель",        de: "Ersteller",         tr: "Yaratıcı",         zh: "创建者" },
+  "nav.about":     { uk: "Про систему",      en: "About",           ru: "О системе",        de: "Über uns",          tr: "Hakkında",         zh: "关于" },
+  "nav.privacy":   { uk: "Конфіденційність", en: "Privacy Policy",  ru: "Конфиденциальность", de: "Datenschutz",    tr: "Gizlilik",         zh: "隐私政策" },
 
   // ── Nav descriptions (shown in info modal) ─────────────────────────
   "nav.command.desc": {
@@ -344,28 +351,29 @@ const DICT: Dict = {
   },
 
   // ── Group labels ───────────────────────────────────────────────────
-  "group.titan":   { uk: "TITAN-94",       en: "TITAN-94",       ru: "TITAN-94" },
-  "group.agent":   { uk: "АГЕНТ",          en: "AGENT",          ru: "АГЕНТ" },
-  "group.enact":   { uk: "ENACT",          en: "ENACT",          ru: "ENACT" },
+  "group.titan":   { uk: "TITAN-94",       en: "TITAN-94",       ru: "TITAN-94",      de: "TITAN-94",        tr: "TITAN-94",       zh: "TITAN-94" },
+  "group.agent":   { uk: "АГЕНТ",          en: "AGENT",          ru: "АГЕНТ",         de: "AGENT",           tr: "AJAN",           zh: "代理" },
+  "group.enact":   { uk: "ENACT",          en: "ENACT",          ru: "ENACT",         de: "ENACT",           tr: "ENACT",          zh: "ENACT" },
+  "group.info":    { uk: "ІНФОРМАЦІЯ",     en: "INFORMATION",    ru: "ИНФОРМАЦИЯ",    de: "INFORMATION",     tr: "BİLGİ",          zh: "信息" },
 
   // ── Status tags ────────────────────────────────────────────────────
-  "tag.live":      { uk: "ОНЛАЙН",         en: "LIVE",           ru: "ОНЛАЙН" },
-  "tag.organism":  { uk: "ОРГАНІЗМ ОНЛАЙН",en: "ORGANISM ONLINE",ru: "ОРГАНИЗМ ОНЛАЙН" },
-  "tag.contracts": { uk: "КОНТРАКТИ",      en: "CONTRACTS",      ru: "КОНТРАКТЫ" },
-  "tag.security":  { uk: "ЯДРО БЕЗПЕКИ",   en: "SECURITY CORE",  ru: "ЯДРО БЕЗОПАСНОСТИ" },
+  "tag.live":      { uk: "ОНЛАЙН",         en: "LIVE",           ru: "ОНЛАЙН",        de: "ONLINE",          tr: "ÇEVRIMIÇI",      zh: "在线" },
+  "tag.organism":  { uk: "ОРГАНІЗМ ОНЛАЙН",en: "ORGANISM ONLINE",ru: "ОРГАНИЗМ ОНЛАЙН",de: "ORGANISMUS AKTIV",tr: "ORGANİZMA AKTİF",zh: "生命体在线" },
+  "tag.contracts": { uk: "КОНТРАКТИ",      en: "CONTRACTS",      ru: "КОНТРАКТЫ",     de: "VERTRÄGE",        tr: "SÖZLEŞMELER",    zh: "合约" },
+  "tag.security":  { uk: "ЯДРО БЕЗПЕКИ",   en: "SECURITY CORE",  ru: "ЯДРО БЕЗОПАСНОСТИ",de: "SICHERHEITSKERN",tr: "GÜVENLİK ÇEKİRDEĞİ", zh: "安全核心" },
 
   // ── Buttons ────────────────────────────────────────────────────────
-  "btn.theme":      { uk: "Тема",          en: "Theme",          ru: "Тема" },
-  "btn.lang":       { uk: "Мова",          en: "Language",       ru: "Язык" },
-  "btn.tz":         { uk: "Часовий пояс",  en: "Timezone",       ru: "Часовой пояс" },
-  "btn.menu_open":  { uk: "Відкрити меню", en: "Open menu",      ru: "Открыть меню" },
-  "btn.menu_close": { uk: "Закрити меню",  en: "Close menu",     ru: "Закрыть меню" },
+  "btn.theme":      { uk: "Тема",          en: "Theme",          ru: "Тема",          de: "Design",          tr: "Tema",           zh: "主题" },
+  "btn.lang":       { uk: "Мова",          en: "Language",       ru: "Язык",          de: "Sprache",         tr: "Dil",            zh: "语言" },
+  "btn.tz":         { uk: "Часовий пояс",  en: "Timezone",       ru: "Часовой пояс",  de: "Zeitzone",        tr: "Saat Dilimi",    zh: "时区" },
+  "btn.menu_open":  { uk: "Відкрити меню", en: "Open menu",      ru: "Открыть меню",  de: "Menü öffnen",     tr: "Menüyü Aç",      zh: "打开菜单" },
+  "btn.menu_close": { uk: "Закрити меню",  en: "Close menu",     ru: "Закрыть меню",  de: "Menü schließen",  tr: "Menüyü Kapat",   zh: "关闭菜单" },
 
   // ── Info modal ─────────────────────────────────────────────────────
-  "info.how_it_works": { uk: "Як це працює",    en: "How it works",    ru: "Как это работает" },
-  "info.instructions": { uk: "Інструкція",      en: "Instructions",    ru: "Инструкция" },
-  "info.close":        { uk: "Закрити",         en: "Close",           ru: "Закрыть" },
-  "info.for_users":    { uk: "Для користувачів",en: "For users",       ru: "Для пользователей" },
+  "info.how_it_works": { uk: "Як це працює",    en: "How it works",    ru: "Как это работает", de: "Wie es funktioniert", tr: "Nasıl Çalışır",  zh: "工作原理" },
+  "info.instructions": { uk: "Інструкція",      en: "Instructions",    ru: "Инструкция",       de: "Anleitung",           tr: "Talimatlar",     zh: "使用说明" },
+  "info.close":        { uk: "Закрити",         en: "Close",           ru: "Закрыть",          de: "Schließen",           tr: "Kapat",          zh: "关闭" },
+  "info.for_users":    { uk: "Для користувачів",en: "For users",       ru: "Для пользователей",de: "Für Benutzer",        tr: "Kullanıcılar İçin", zh: "用户指南" },
 
   // ── Creator page ───────────────────────────────────────────────────
   "creator.title":        { uk: "Командний пункт TITAN-94", en: "TITAN-94 Command Point",     ru: "Командный пункт TITAN-94" },
@@ -393,5 +401,8 @@ const DICT: Dict = {
 };
 
 export function t(key: string, lang: Lang): string {
-  return DICT[key]?.[lang] ?? key;
+  const entry = DICT[key];
+  if (!entry) return key;
+  // Fallback chain: requested lang → en → uk → key
+  return entry[lang] ?? entry["en"] ?? entry["uk"] ?? key;
 }

@@ -162,6 +162,9 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
     { code: "uk", label: "Українська", flag: "UA" },
     { code: "en", label: "English",    flag: "EN" },
     { code: "ru", label: "Русский",    flag: "RU" },
+    { code: "de", label: "Deutsch",    flag: "DE" },
+    { code: "tr", label: "Türkçe",     flag: "TR" },
+    { code: "zh", label: "中文",        flag: "ZH" },
   ];
   const currentFlag = langs.find(l => l.code === lang)?.flag ?? "UA";
   const tzShort = tz === "auto"
@@ -361,7 +364,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="opacity-60 mt-1">Gemini 2.5 Flash · 4 Engines</div>
           <div className="opacity-60">Active</div>
         </div>
-        <div className="mt-3 text-center" style={{ color: "rgba(207,255,255,0.25)", fontSize: "10px" }}>
+        <div className="mt-3 flex gap-2 flex-wrap">
+          <Link href="/about"
+            className="text-[10px] hover:underline transition-colors"
+            style={{ color: "rgba(0,255,255,0.35)" }}>
+            {t("nav.about", lang)}
+          </Link>
+          <span style={{ color: "rgba(0,255,255,0.15)", fontSize: "10px" }}>·</span>
+          <Link href="/privacy"
+            className="text-[10px] hover:underline transition-colors"
+            style={{ color: "rgba(0,255,255,0.35)" }}>
+            {t("nav.privacy", lang)}
+          </Link>
+        </div>
+        <div className="mt-2 text-center" style={{ color: "rgba(207,255,255,0.25)", fontSize: "10px" }}>
           v4.0 · DEI GRATIA Роман
         </div>
       </div>
