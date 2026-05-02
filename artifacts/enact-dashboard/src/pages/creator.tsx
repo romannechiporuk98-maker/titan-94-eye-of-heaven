@@ -372,6 +372,186 @@ function AiEngineerTab({ tgId, lang }: { tgId: string; lang: string }) {
   );
 }
 
+// ─────────────────── SECRETS PANEL ───────────────────
+const SECRET_GROUPS = [
+  { group: "ai",       label: "🤖 AI МОДЕЛІ",          keys: ["GEMINI_API_KEY","OPENAI_API_KEY","ANTHROPIC_API_KEY","OPENROUTER_API_KEY"] },
+  { group: "telegram", label: "✈️ TELEGRAM",            keys: ["TELEGRAM_BOT_TOKEN","TELEGRAM_ADMIN_CHAT_ID"] },
+  { group: "ton",      label: "💎 TON BLOCKCHAIN",      keys: ["TON_API_KEY","TONAPI_KEY"] },
+  { group: "trading",  label: "📈 BINANCE TRADING",     keys: ["BINANCE_API_KEY","BINANCE_API_SECRET"] },
+  { group: "social",   label: "🐦 TWITTER / X",         keys: ["TWITTER_BEARER_TOKEN"] },
+];
+
+interface SecretEntry { key: string; configured: boolean; source: string; hint: string; meta: { name: string; description: string; getUrl: string } }
+
+function SecretsPanel({ tgId, toast }: { tgId: string; toast: any }) {
+  const qc = useQueryClient();
+  const { data, isLoading, refetch } = useQuery<{ keys: SecretEntry[] }>({
+    queryKey: ["/secrets/status", tgId],
+    queryFn: () => fetch(api("/secrets/status"), { headers: authHeaders(tgId) }).then(r => r.json()),
+    staleTime: 10_000,
+  });
+
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [reveal, setReveal] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+
+  const byKey: Record<string, SecretEntry> = {};
+  (data?.keys ?? []).forEach(k => { byKey[k.key] = k; });
+
+  async function saveSecret(key: string) {
+    const raw = (drafts[key] ?? "").replace(/\s+/g, "").trim();
+    if (!raw) return;
+    setSaving(s => ({ ...s, [key]: true }));
+    try {
+      const r = await fetch(api("/secrets/set"), {
+        method: "POST",
+        headers: authHeaders(tgId),
+        body: JSON.stringify({ key, value: raw }),
+      });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "Server error");
+      toast({ title: `✅ ${key} збережено` });
+      haptic("success");
+      setDrafts(d => { const n = { ...d }; delete n[key]; return n; });
+      refetch();
+      qc.invalidateQueries({ queryKey: ["/secrets/status"] });
+    } catch (e: any) {
+      toast({ title: "❌ Помилка", description: e.message, variant: "destructive" });
+      haptic("error");
+    } finally {
+      setSaving(s => ({ ...s, [key]: false }));
+    }
+  }
+
+  async function deleteSecret(key: string) {
+    setDeleting(d => ({ ...d, [key]: true }));
+    try {
+      await fetch(api(`/secrets/${key}`), { method: "DELETE", headers: authHeaders(tgId) });
+      toast({ title: `🗑️ ${key} видалено` });
+      refetch();
+    } finally {
+      setDeleting(d => ({ ...d, [key]: false }));
+    }
+  }
+
+  const configured = (data?.keys ?? []).filter(k => k.configured).length;
+  const total = data?.keys?.length ?? 0;
+
+  return (
+    <div className="titan-card mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-amber flex items-center gap-2">
+          🔑 API КЛЮЧІ · ПРЯМИЙ ДОСТУП
+          <span className="text-xs text-muted font-normal">
+            {isLoading ? "…" : `${configured}/${total} налаштовано`}
+          </span>
+        </h3>
+        <button onClick={() => refetch()} className="titan-btn text-xs px-2 py-1">
+          <RefreshCw className="w-3 h-3 mr-1" />Refresh
+        </button>
+      </div>
+
+      {/* Progress */}
+      {!isLoading && total > 0 && (
+        <div className="mb-4">
+          <div className="h-1.5 bg-zinc-800 rounded overflow-hidden">
+            <div className="h-full bg-cyan-500 transition-all" style={{ width: `${(configured / total) * 100}%` }} />
+          </div>
+          <p className="text-[10px] text-muted mt-1">Вставте ключ → натисніть SAVE. Пробіли/переноси рядків стриппуються автоматично.</p>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="text-center py-6"><Loader2 className="w-5 h-5 mx-auto animate-spin text-cyan-400" /></div>
+      ) : (
+        <div className="space-y-5">
+          {SECRET_GROUPS.map(({ label, keys }) => (
+            <div key={label}>
+              <p className="text-[10px] text-muted font-bold mb-2 tracking-widest">{label}</p>
+              <div className="space-y-2">
+                {keys.map(key => {
+                  const entry = byKey[key];
+                  const cfg = entry?.configured ?? false;
+                  const hasDraft = !!drafts[key]?.trim();
+                  const isRevealed = reveal[key];
+                  return (
+                    <div key={key} className={`border rounded p-2 transition-colors ${cfg ? "border-cyan-500/30 bg-cyan-500/5" : "border-zinc-700"}`}>
+                      <div className="flex items-start gap-2">
+                        {/* Status dot */}
+                        <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${cfg ? "bg-green-400" : "bg-zinc-600"}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-xs font-bold font-mono text-primary">{key}</span>
+                            {cfg && (
+                              <span className="text-[10px] text-muted font-mono">{entry?.hint}</span>
+                            )}
+                            {!cfg && <span className="text-[10px] text-red-400">не налаштовано</span>}
+                          </div>
+                          {entry?.meta?.description && (
+                            <p className="text-[10px] text-zinc-500 mb-1.5 leading-relaxed">{entry.meta.description}</p>
+                          )}
+                          {/* Input row */}
+                          <div className="flex gap-1">
+                            <div className="relative flex-1">
+                              <input
+                                type={isRevealed ? "text" : "password"}
+                                placeholder={cfg ? "Вставте нове значення щоб замінити…" : "Вставте ключ тут…"}
+                                value={drafts[key] ?? ""}
+                                onChange={e => setDrafts(d => ({ ...d, [key]: e.target.value }))}
+                                onPaste={e => {
+                                  e.preventDefault();
+                                  const v = e.clipboardData.getData("text").replace(/\s+/g, "").trim();
+                                  setDrafts(d => ({ ...d, [key]: v }));
+                                }}
+                                className="titan-input w-full text-xs pr-8 font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setReveal(r => ({ ...r, [key]: !r[key] }))}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-cyan-400"
+                              >
+                                {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => saveSecret(key)}
+                              disabled={!hasDraft || saving[key]}
+                              className="titan-btn titan-btn-amber text-xs px-3 py-1.5 disabled:opacity-40"
+                            >
+                              {saving[key] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                            </button>
+                            {cfg && (
+                              <button
+                                onClick={() => deleteSecret(key)}
+                                disabled={deleting[key]}
+                                title="Видалити ключ"
+                                className="titan-btn text-xs px-2 py-1.5 text-red-400 hover:border-red-500/40 disabled:opacity-40"
+                              >
+                                {deleting[key] ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                              </button>
+                            )}
+                            {entry?.meta?.getUrl && (
+                              <a href={entry.meta.getUrl} target="_blank" rel="noopener noreferrer"
+                                className="titan-btn text-xs px-2 py-1.5 text-zinc-400 hover:text-cyan-400" title="Отримати ключ">
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────── SETTINGS ───────────────────
 function SettingsTab({ tgId, qc, toast, lang }: { tgId: string; qc: any; toast: any; lang: string }) {
   const { data: settings, isLoading } = useQuery({
@@ -411,6 +591,7 @@ function SettingsTab({ tgId, qc, toast, lang }: { tgId: string; qc: any; toast: 
 
   return (
     <div className="space-y-4">
+      <SecretsPanel tgId={tgId} toast={toast} />
       <div className="titan-card">
         <h3 className="text-sm font-bold text-amber mb-3">{S("ЦІНИ ПІДПИСОК (TON)", "ЦЕНЫ ПОДПИСОК (TON)", "SUBSCRIPTION PRICES (TON)")}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
