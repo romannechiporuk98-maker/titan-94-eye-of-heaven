@@ -3,7 +3,7 @@ import { useGetJob, getGetJobQueryKey } from "@workspace/api-client-react";
 import { JobStateBadge } from "@/components/job-badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, ArrowLeft, Clock, Copy, CheckCircle2 } from "lucide-react";
+import { ExternalLink, ArrowLeft, Clock, Copy, CheckCircle2, Activity } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -42,7 +42,7 @@ function CopyableText({ text, truncate = false }: { text: string, truncate?: boo
 }
 
 export default function JobDetail() {
-  const params = useParams();
+  const params = useParams<{ address: string }>();
   const address = params.address || "";
   
   const { data: job, isLoading, error } = useGetJob(address, {

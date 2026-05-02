@@ -29,6 +29,7 @@ import binanceRouter       from "./binance";
 import tonInfraRouter      from "./ton-infra";
 import nexusModelsRouter   from "./nexus-models";
 import tonLiveRouter       from "./ton-live";
+import authRouter           from "./auth";
 
 const router: IRouter = Router();
 
@@ -62,5 +63,6 @@ router.use(binanceRouter);
 router.use(tonInfraRouter);
 router.use(nexusModelsRouter);
 router.use(tonLiveRouter);
+router.use(authRouter);
 
 export default router;

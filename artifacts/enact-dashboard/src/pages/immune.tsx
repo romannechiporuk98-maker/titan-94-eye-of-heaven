@@ -97,6 +97,7 @@ function HowItWorks() {
 /* ── Vulnerability detail row ─────────────────────────────────────── */
 function VulnRow({ v }: { v: any }) {
   const [open, setOpen] = useState(false);
+  const { lang } = useLang();
   const sev = (v.severity || "info").toLowerCase();
   const col = SEV_COLOR[sev] || "#6b7280";
   const bg  = SEV_BG[sev]  || "transparent";

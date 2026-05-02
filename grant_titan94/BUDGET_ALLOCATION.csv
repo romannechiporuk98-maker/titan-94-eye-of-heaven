@@ -1,0 +1,26 @@
+Category,Item,Milestone,Amount USD,Notes
+Development,GitHub public repo + CI/CD setup,M1,$500,GitHub Actions workflows + branch protection
+Development,Technical documentation writing,M1,$1500,Whitepaper + API docs + Architecture docs
+Development,Open-source code cleanup + tests,M1,$2000,Code review + unit tests + integration tests
+Infrastructure,Server hosting (3 months),M1-M3,$1000,Production-grade hosting for 3 months
+Infrastructure,Database scaling (PostgreSQL),M1-M3,$500,Connection pooling + read replicas
+Infrastructure,CDN + domain + TLS,M1,$500,Production domain + CDN for dashboard
+Total M1,,,$6000,
+Development,TON Connect 2.0 full integration,M2,$2500,Wallet auth + on-chain payment verification
+Development,Web3 registration hook + API,M2,$1500,No-Telegram registration flow
+Development,Redis caching layer,M2,$1500,API response caching + session management
+Development,Load testing + performance optimization,M2,$1500,10k concurrent users test + query optimization
+Security,Security audit (self + community),M2,$1000,Dependency audit + SAST scan + penetration test
+Infrastructure,Scaling infrastructure (load balancer),M2,$1500,Multi-instance agent + API server redundancy
+Documentation,SDK design + API specification,M2,$500,OpenAPI spec + SDK interface design
+Total M2,,,$10000,
+Development,@titan94/sdk npm package,M3,$2500,TypeScript SDK + type definitions
+Development,Webhook notification system,M3,$1000,Real-time threat alerts for developers
+Integration,TONScan integration,M3,$1000,Threat data overlay on TONScan
+Integration,DeDust DEX security scoring,M3,$1000,Security score API for DeDust
+Integration,GetGems NFT safety checks,M3,$500,Contract safety API for GetGems
+Documentation,SDK documentation + examples,M3,$1000,Docusaurus site + code examples
+Marketing,TON community outreach,M3,$500,TON dev communities + social media
+Grant Report,Completion report + Phase 2 proposal,M3,$500,Grant report + next-phase funding proposal
+Total M3,,,$8000,
+GRAND TOTAL,,,$ 24000,Remaining $1000 buffer for unforeseen costs

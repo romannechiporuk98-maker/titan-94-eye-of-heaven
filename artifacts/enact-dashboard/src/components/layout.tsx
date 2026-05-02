@@ -145,12 +145,23 @@ function TonWalletChip({ compact = false }: { compact?: boolean }) {
 
   if (!address) {
     return (
-      <div style={{ "--tc-button-background": "transparent" } as any}>
+      <div
+        style={{
+          "--tc-button-background": "transparent",
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          zIndex: 50,
+          minWidth: compact ? "90px" : "120px",
+        } as any}
+      >
         <TonConnectButton
           style={{
             "--tc-button-background":     "transparent",
             "--tc-button-border-radius":  "4px",
             "--tc-button-font-size":      compact ? "9px" : "10px",
+            "--tc-button-color":          "#00FFFF",
+            display:                      "flex",
           } as any}
         />
       </div>

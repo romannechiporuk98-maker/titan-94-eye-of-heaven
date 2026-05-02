@@ -43,7 +43,7 @@ export default function CreateJob() {
   });
 
   const onSubmit = (data: CreateJobFormValues) => {
-    createLinkMutation.mutate({ data });
+    createLinkMutation.mutate({ data: data as any });
   };
 
   const handleCopy = (text: string) => {
