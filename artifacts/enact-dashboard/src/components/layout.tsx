@@ -14,7 +14,7 @@ import {
   Activity, Briefcase, PlusCircle, ExternalLink,
   Eye, Shield, DollarSign, Brain, Heart, FileCode, Cpu,
   Dna, BarChart3, Sparkles, Bot, Code2, TrendingUp, Key, KeyRound, Crown,
-  Menu, X, Languages, Clock, Info, BookOpen, Globe, Trophy,
+  Menu, X, Languages, Clock, Info, BookOpen, Globe, Trophy, CandlestickChart, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang, useTimezone, fmtClock, resolveTz, TZ_OPTIONS, t, type Lang } from "@/lib/ui-prefs";
@@ -40,6 +40,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/ton-network", tkey: "nav.ton_network", icon: Globe,      group: "titan" },
   { href: "/grant",       tkey: "nav.grant",       icon: Trophy,     group: "titan" },
   { href: "/earn",        tkey: "nav.earn",        icon: DollarSign, group: "titan" },
+  { href: "/charts",    tkey: "nav.charts",    icon: CandlestickChart, group: "titan" },
+  { href: "/ton-wallet",tkey: "nav.ton_wallet",icon: Wallet,     group: "titan" },
   { href: "/autotrade", tkey: "nav.autotrade", icon: TrendingUp, group: "agent" },
   { href: "/builder",   tkey: "nav.builder",   icon: Bot,        group: "agent" },
   { href: "/developer", tkey: "nav.developer", icon: Code2,      group: "agent" },

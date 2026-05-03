@@ -30,6 +30,7 @@ import tonInfraRouter      from "./ton-infra";
 import nexusModelsRouter   from "./nexus-models";
 import tonLiveRouter       from "./ton-live";
 import authRouter           from "./auth";
+import marketProxyRouter    from "./market-proxy";
 
 const router: IRouter = Router();
 
@@ -64,5 +65,6 @@ router.use(tonInfraRouter);
 router.use(nexusModelsRouter);
 router.use(tonLiveRouter);
 router.use(authRouter);
+router.use(marketProxyRouter);
 
 export default router;

@@ -582,6 +582,7 @@ const DICT: Dict = {
   "creator.tab.users":    { uk: "Користувачі",   en: "Users",          ru: "Пользователи" },
   "creator.tab.terminal": { uk: "Термінал",      en: "Terminal",       ru: "Терминал" },
   "creator.tab.broadcast":    { uk: "Розсилка",      en: "Broadcast",      ru: "Рассылка" },
+  "creator.tab.editor":       { uk: "Редактор",      en: "Editor",         ru: "Редактор" },
   "creator.tab.diagnostics":  { uk: "Діагностика",   en: "Diagnostics",    ru: "Диагностика" },
   "creator.kpi.users":    { uk: "ВСЬОГО ЮЗЕРІВ", en: "TOTAL USERS",    ru: "ВСЕГО ЮЗЕРОВ" },
   "creator.kpi.revenue":  { uk: "МІСЯЧНИЙ ДОХІД",en: "MONTHLY REVENUE",ru: "МЕС. ДОХОД" },
@@ -594,6 +595,63 @@ const DICT: Dict = {
   "creator.menu.all_off": { uk: "Вимкнути всі",  en: "Disable all",    ru: "Выключить все" },
   "creator.access_denied":{ uk: "Доступ заборонено. Цей розділ тільки для творця TITAN-94.", en: "Access denied. This section is for the TITAN-94 creator only.", ru: "Доступ запрещён. Только для создателя TITAN-94." },
   "creator.redirecting":  { uk: "Перенаправлення на головну...", en: "Redirecting to home...", ru: "Перенаправление на главную..." },
+
+  // ── Nav: new pages ───────────────────────────────────────────────────
+  "nav.charts":           { uk: "Крипто-графіки",  en: "Crypto Charts",   ru: "Крипто-графики",   de: "Krypto-Charts",      tr: "Kripto Grafikler",   zh: "加密图表" },
+  "nav.charts.desc":      { uk: "Бінанс-стиль графіки: TON, BTC, ETH, BNB, SOL. Свічковий графік, вибір пари та таймфрейму.", en: "Binance-style charts: TON, BTC, ETH, BNB, SOL. Candlestick chart, pair and timeframe selector.", ru: "Binance-стиль графики: TON, BTC, ETH. Свечной график, выбор пары и таймфрейма." },
+  "nav.charts.instr":     { uk: "Оберіть пару зверху. Змінюй таймфрейм (1Д/7Д/30Д). Наводь на свічку — побачиш OHLC дані.", en: "Select a pair at the top. Change the timeframe (1D/7D/30D). Hover on a candle to see OHLC data.", ru: "Выбери пару сверху. Меняй таймфрейм. Наведи на свечу — видишь OHLC данные." },
+  "nav.ton_wallet":       { uk: "TON Гаманець",    en: "TON Wallet",      ru: "TON Кошелёк",      de: "TON Wallet",         tr: "TON Cüzdanı",        zh: "TON 钱包" },
+  "nav.ton_wallet.desc":  { uk: "Повний огляд підключеного TON гаманця: баланс, жетони (jettons), NFT, останні транзакції — як у TonKeeper.", en: "Full overview of your connected TON wallet: balance, jettons (tokens), NFTs, recent transactions — like TonKeeper.", ru: "Полный обзор TON кошелька: баланс, жетоны, NFT, транзакции — как в TonKeeper." },
+  "nav.ton_wallet.instr": { uk: "Підключи гаманець кнопкою 'Connect Wallet'. Після підключення побачиш всі токени і NFT автоматично.", en: "Connect your wallet with the 'Connect Wallet' button. After connecting you'll see all tokens and NFTs automatically.", ru: "Подключи кошелёк кнопкой 'Connect Wallet'. После подключения увидишь все токены и NFT." },
+
+  // ── Charts page translations ─────────────────────────────────────────
+  "page.charts.title":    { uk: "КРИПТО ГРАФІКИ",  en: "CRYPTO CHARTS",   ru: "КРИПТО ГРАФИКИ",   de: "KRYPTO-CHARTS",      tr: "KRİPTO GRAFİKLER",   zh: "加密图表" },
+  "page.charts.sub":      { uk: "Бінанс-стиль свічковий графік · Вибір пари та таймфрейму · Live дані CoinGecko", en: "Binance-style candlestick · Pair & timeframe selector · Live CoinGecko data", ru: "Binance-стиль свечной график · Выбор пары · Живые данные CoinGecko", de: "Binance-Kerzenchart · Paar- & Zeitrahmenauswahl · Live CoinGecko-Daten", tr: "Binance tarzı mum grafiği · Çift & zaman dilimi seçici · Canlı CoinGecko verisi", zh: "Binance 风格蜡烛图 · 交易对和时间范围选择 · CoinGecko 实时数据" },
+  "page.charts.price":    { uk: "ЦІНА",            en: "PRICE",           ru: "ЦЕНА",             de: "PREIS",              tr: "FİYAT",              zh: "价格" },
+  "page.charts.rate_limit":{ uk: "Перевищено ліміт API CoinGecko. Зачекай хвилину і спробуй знову.", en: "CoinGecko API rate limit exceeded. Wait a minute and try again.", ru: "Превышен лимит API CoinGecko. Подожди минуту.", de: "CoinGecko API-Rate-Limit überschritten. Warte eine Minute.", tr: "CoinGecko API hız sınırı aşıldı. Bir dakika bekle.", zh: "超过 CoinGecko API 速率限制，请等待一分钟后重试。" },
+  "page.charts.watchlist":{ uk: "СПИСОК ПАР",      en: "WATCHLIST",       ru: "СПИСОК ПАР",       de: "BEOBACHTUNGSLISTE",  tr: "İZLEME LİSTESİ",    zh: "关注列表" },
+
+  // ── TON Wallet page translations ─────────────────────────────────────
+  "wallet.title":          { uk: "TON ГАМАНЕЦЬ",       en: "TON WALLET",         ru: "TON КОШЕЛЁК",       de: "TON WALLET",          tr: "TON CÜZDANI",         zh: "TON 钱包" },
+  "wallet.sub":            { uk: "Повний огляд активів підключеного гаманця — токени, NFT, транзакції", en: "Full overview of connected wallet assets — tokens, NFTs, transactions", ru: "Полный обзор активов подключённого кошелька — токены, NFT, транзакции", de: "Vollständige Übersicht der verbundenen Wallet-Assets — Token, NFTs, Transaktionen", tr: "Bağlı cüzdan varlıklarının tam özeti — tokenler, NFT'ler, işlemler", zh: "已连接钱包资产完整概览 — 代币、NFT、交易" },
+  "wallet.connect_title":  { uk: "Підключи TON Гаманець", en: "Connect TON Wallet", ru: "Подключи TON Кошелёк", de: "TON Wallet verbinden", tr: "TON Cüzdanını Bağla", zh: "连接 TON 钱包" },
+  "wallet.connect_desc":   { uk: "Підключи Tonkeeper, MyTonWallet або інший TON-гаманець щоб побачити всі свої активи — баланс, токени та NFT — прямо тут.", en: "Connect Tonkeeper, MyTonWallet or any other TON wallet to see all your assets — balance, tokens and NFTs — right here.", ru: "Подключи Tonkeeper, MyTonWallet или другой TON-кошелёк чтобы увидеть все активы.", de: "Verbinde Tonkeeper, MyTonWallet oder eine andere TON Wallet, um alle Assets zu sehen.", tr: "Tüm varlıklarını görmek için Tonkeeper, MyTonWallet veya başka bir TON cüzdanını bağla.", zh: "连接 Tonkeeper、MyTonWallet 或其他 TON 钱包，即可在此查看所有资产。" },
+  "wallet.my_wallet":      { uk: "МІЙ ГАМАНЕЦЬ",       en: "MY WALLET",          ru: "МОЙ КОШЕЛЁК",       de: "MEIN WALLET",         tr: "CÜZDANIM",            zh: "我的钱包" },
+  "wallet.total_balance":  { uk: "ЗАГАЛЬНИЙ БАЛАНС",   en: "TOTAL BALANCE",      ru: "ОБЩИЙ БАЛАНС",      de: "GESAMTGUTHABEN",      tr: "TOPLAM BAKİYE",       zh: "总余额" },
+  "wallet.status":         { uk: "СТАТУС",             en: "STATUS",             ru: "СТАТУС",            de: "STATUS",              tr: "DURUM",               zh: "状态" },
+  "wallet.tab.overview":   { uk: "Огляд",              en: "Overview",           ru: "Обзор",             de: "Übersicht",           tr: "Genel Bakış",         zh: "概览" },
+  "wallet.tab.tokens":     { uk: "Токени",             en: "Tokens",             ru: "Токены",            de: "Token",               tr: "Tokenler",            zh: "代币" },
+  "wallet.tab.nfts":       { uk: "NFT",                en: "NFTs",               ru: "NFT",               de: "NFTs",                tr: "NFT'ler",             zh: "NFT" },
+  "wallet.tab.history":    { uk: "Транзакції",         en: "Transactions",       ru: "Транзакции",        de: "Transaktionen",       tr: "İşlemler",            zh: "交易记录" },
+  "wallet.no_tokens":      { uk: "Токени не знайдено або гаманець порожній", en: "No tokens found or wallet is empty", ru: "Токены не найдены или кошелёк пустой", de: "Keine Token gefunden oder Wallet leer", tr: "Token bulunamadı veya cüzdan boş", zh: "未找到代币或钱包为空" },
+  "wallet.no_nfts":        { uk: "NFT не знайдено",   en: "No NFTs found",      ru: "NFT не найдены",    de: "Keine NFTs gefunden", tr: "NFT bulunamadı",      zh: "未找到 NFT" },
+  "wallet.no_txs":         { uk: "Транзакцій немає",  en: "No transactions",    ru: "Транзакций нет",    de: "Keine Transaktionen", tr: "İşlem yok",           zh: "暂无交易" },
+  "wallet.tx_sent":        { uk: "Відправлено",        en: "Sent",               ru: "Отправлено",        de: "Gesendet",            tr: "Gönderildi",          zh: "已发送" },
+  "wallet.tx_received":    { uk: "Отримано",           en: "Received",           ru: "Получено",          de: "Empfangen",           tr: "Alındı",              zh: "已接收" },
+  "wallet.tx_count":       { uk: "ТРАНЗАКЦІЙ",         en: "TRANSACTIONS",       ru: "ТРАНЗАКЦИЙ",        de: "TRANSAKTIONEN",       tr: "İŞLEMLER",            zh: "交易数" },
+  "wallet.top_tokens":     { uk: "ТОПОВІ ТОКЕНИ",      en: "TOP TOKENS",         ru: "ТОП ТОКЕНЫ",        de: "TOP TOKEN",           tr: "ÜST TOKENLER",        zh: "主要代币" },
+  "wallet.recent_txs":     { uk: "ОСТАННІ ТРАНЗАКЦІЇ", en: "RECENT TRANSACTIONS",ru: "ПОСЛЕДНИЕ ТРАНЗАКЦИИ",de: "LETZTE TRANSAKTIONEN",tr: "SON İŞLEMLER",       zh: "最近交易" },
+  "wallet.see_all":        { uk: "Всі →",              en: "See all →",          ru: "Все →",             de: "Alle →",              tr: "Tümünü gör →",        zh: "查看全部 →" },
+
+  // ── Earn page missing keys ───────────────────────────────────────────
+  "earn.connect_wallet":   { uk: "TON CONNECT — ПЛАТЕЖІ В 1 ТАП", en: "TON CONNECT — 1-TAP PAYMENTS", ru: "TON CONNECT — ПЛАТЕЖИ В 1 ТАП", de: "TON CONNECT — 1-KLICK-ZAHLUNG", tr: "TON CONNECT — TEK TAP ÖDEME", zh: "TON CONNECT — 一键支付" },
+  "earn.auto_earn_label":  { uk: "АВТОМАТИЧНИЙ ЗАРОБІТОК — кожні 6хв", en: "AUTO-EARN — every 6 min", ru: "АВТО-ЗАРАБОТОК — каждые 6 мин", de: "AUTO-VERDIENST — alle 6 Min", tr: "OTOMATİK KAZANÇ — her 6 dk", zh: "自动收益 — 每6分钟" },
+  "earn.my_auto_earn":     { uk: "МІЙ AUTO-EARN TON",  en: "MY AUTO-EARN TON",   ru: "МОЙ AUTO-EARN TON", de: "MEIN AUTO-EARN TON",  tr: "AUTO-EARN TON'UM",    zh: "我的自动收益 TON" },
+  "earn.per_cycle":        { uk: "ЗА НАСТУПНИЙ ЦИКЛ", en: "NEXT CYCLE PAYOUT", ru: "ЗА СЛЕДУЮЩИЙ ЦИКЛ", de: "NÄCHSTER ZYKLUS",     tr: "SONRAKİ DÖNGÜ",       zh: "下个周期" },
+  "earn.cycles_received":  { uk: "ЦИКЛІВ ОТРИМАНО",   en: "CYCLES RECEIVED",   ru: "ЦИКЛОВ ПОЛУЧЕНО",   de: "ZYKLEN ERHALTEN",     tr: "ALINAN DÖNGÜLER",     zh: "已收到周期" },
+  "earn.platform_rev":     { uk: "ПЛАТФОРМА — RECURRING REVENUE", en: "PLATFORM — RECURRING REVENUE", ru: "ПЛАТФОРМА — RECURRING REVENUE", de: "PLATTFORM — RECURRING REVENUE", tr: "PLATFORM — RECURRING REVENUE", zh: "平台 — 周期性收入" },
+  "earn.active_subs":      { uk: "активних",           en: "active",            ru: "активных",          de: "aktiv",               tr: "aktif",               zh: "活跃" },
+
+  // ── Autotrade page missing keys ──────────────────────────────────────
+  "autotrade.run_cycle":   { uk: "ЗАПУСТИТИ ЦИКЛ",    en: "RUN CYCLE",         ru: "ЗАПУСТИТЬ ЦИКЛ",    de: "ZYKLUS STARTEN",      tr: "DÖNGÜ ÇALIŞTIR",      zh: "运行周期" },
+  "autotrade.open_pos":    { uk: "ВІДКРИТИ ПОЗИЦІЮ",  en: "OPEN POSITION",     ru: "ОТКРЫТЬ ПОЗИЦИЮ",   de: "POSITION ÖFFNEN",     tr: "POZİSYON AÇ",         zh: "开仓" },
+  "autotrade.no_pos":      { uk: "Активних позицій немає. Натисни «Відкрити позицію» щоб почати.", en: "No active positions. Click 'Open Position' to start.", ru: "Нет активных позиций. Нажми «Открыть позицию».", de: "Keine aktiven Positionen. Klicke «Position öffnen».", tr: "Aktif pozisyon yok. Başlamak için «Pozisyon Aç»'a tıkla.", zh: "没有活跃头寸。点击「开仓」开始。" },
+
+  // ── Terminal translations ────────────────────────────────────────────
+  "terminal.ready":        { uk: "Готовий до команд. Спробуй: ls, ps, pnpm run build...", en: "Ready. Try: ls, ps, pnpm run build...", ru: "Готов к командам. Попробуй: ls, ps, pnpm run build...", de: "Bereit. Versuche: ls, ps, pnpm run build...", tr: "Hazır. Dene: ls, ps, pnpm run build...", zh: "就绪。试试: ls, ps, pnpm run build..." },
+  "terminal.running":      { uk: "Виконую...",         en: "Running...",        ru: "Выполняю...",       de: "Läuft...",            tr: "Çalışıyor...",        zh: "执行中..." },
+  "terminal.clear":        { uk: "Очистити",           en: "Clear",             ru: "Очистить",          de: "Löschen",             tr: "Temizle",             zh: "清除" },
+  "terminal.history":      { uk: "Остання команда",    en: "Last command",      ru: "Последняя команда", de: "Letzter Befehl",      tr: "Son komut",           zh: "上次命令" },
 };
 
 export function t(key: string, lang: Lang): string {

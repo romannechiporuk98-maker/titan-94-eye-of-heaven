@@ -8,6 +8,7 @@ import {
   MenuSquare, Info, BookOpen, ToggleLeft, ToggleRight,
   Wallet, FileText, Copy, ExternalLink, RefreshCw, ArrowUpRight,
   Wrench, AlertTriangle, CheckCircle2, Clock, ClipboardList, ChevronDown, ChevronUp,
+  PencilLine, Globe, Type, Link, Image as ImageIcon, Palette,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -44,7 +45,7 @@ export default function CreatorPage() {
   const { toast } = useToast();
   const { lang } = useLang();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"dashboard" | "ai" | "reserve" | "grant" | "settings" | "menu" | "users" | "terminal" | "broadcast" | "diagnostics">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "ai" | "reserve" | "grant" | "settings" | "menu" | "users" | "terminal" | "broadcast" | "diagnostics" | "editor">("dashboard");
   const [reveal, setReveal] = useState(false);
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function CreatorPage() {
     { k: "users",       tkey: "creator.tab.users",       i: Users },
     { k: "terminal",    tkey: "creator.tab.terminal",    i: Terminal },
     { k: "broadcast",   tkey: "creator.tab.broadcast",   i: Send },
+    { k: "editor",      tkey: "creator.tab.editor",      i: PencilLine },
   ];
 
   return (
@@ -128,6 +130,7 @@ export default function CreatorPage() {
       {tab === "terminal"    && <TerminalTab tgId={auth.tgId} lang={lang} />}
       {tab === "broadcast"   && <BroadcastTab tgId={auth.tgId} toast={toast} lang={lang} />}
       {tab === "diagnostics" && <DiagnosticsTab tgId={auth.tgId} lang={lang} toast={toast} />}
+      {tab === "editor"      && <ProjectEditorTab tgId={auth.tgId} lang={lang} toast={toast} />}
     </div>
   );
 }
@@ -937,60 +940,249 @@ function UsersTab({ tgId, reveal, toast, qc, lang }: { tgId: string; reveal: boo
 
 // ─────────────────── TERMINAL ───────────────────
 function TerminalTab({ tgId, lang }: { tgId: string; lang: string }) {
-  const [history, setHistory] = useState<{ cmd: string; out: string; ok: boolean; ts: number }[]>([]);
-  const [cmd, setCmd] = useState("");
-  const [busy, setBusy] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" }); }, [history]);
+  type HistItem = { cmd: string; out: string; ok: boolean; ts: number; dur?: number };
+  const [history, setHistory] = useState<HistItem[]>([]);
+  const [cmdHistory, setCmdHistory] = useState<string[]>([]); // navigatable cmd history
+  const [histIdx, setHistIdx]   = useState(-1);
+  const [cmd, setCmd]           = useState("");
+  const [busy, setBusy]         = useState(false);
+  const outputRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   const S = (uk: string, ru: string, en: string) => lang === "uk" ? uk : lang === "ru" ? ru : en;
 
-  const run = async (e: FormEvent) => {
-    e.preventDefault();
-    const c = cmd.trim();
+  // Auto-scroll on new output
+  useEffect(() => {
+    outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight, behavior: "smooth" });
+  }, [history, busy]);
+
+  const run = async (e?: FormEvent, forceCmd?: string) => {
+    if (e) e.preventDefault();
+    const c = (forceCmd ?? cmd).trim();
     if (!c || busy) return;
-    haptic("light"); setBusy(true); setCmd("");
+    haptic("light");
+    setBusy(true);
+    setCmd("");
+    setHistIdx(-1);
+    setCmdHistory(prev => [c, ...prev.filter(x => x !== c)].slice(0, 100));
+    const t0 = Date.now();
     try {
-      const r = await fetch(api("/creator/exec"), { method: "POST", headers: authHeaders(tgId), body: JSON.stringify({ command: c, timeout: 30000 }) });
+      const r = await fetch(api("/creator/exec"), {
+        method: "POST",
+        headers: authHeaders(tgId),
+        body: JSON.stringify({ command: c, timeout: 30000 }),
+      });
       const d = await r.json();
-      const out = `${d.stdout || ""}${d.stderr ? "\n[stderr]\n" + d.stderr : ""}`;
-      setHistory((h) => [...h, { cmd: c, out: out.trim() || "(no output)", ok: d.exitCode === 0, ts: Date.now() }]);
+      const out = [d.stdout, d.stderr ? `\n\x1b[31m[stderr]\x1b[0m\n${d.stderr}` : ""].filter(Boolean).join("").trim() || "(no output)";
+      setHistory(h => [...h, { cmd: c, out, ok: d.exitCode === 0, ts: Date.now(), dur: Date.now() - t0 }]);
       haptic(d.exitCode === 0 ? "success" : "error");
     } catch (err: any) {
-      setHistory((h) => [...h, { cmd: c, out: err.message, ok: false, ts: Date.now() }]);
+      setHistory(h => [...h, { cmd: c, out: `\x1b[31mERROR: ${err.message}\x1b[0m`, ok: false, ts: Date.now(), dur: Date.now() - t0 }]);
       haptic("error");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   };
 
-  const quick = ["ls -la", "git status", "pnpm --filter @workspace/api-server run build", "ps aux | grep node | head", "df -h"];
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const newIdx = Math.min(histIdx + 1, cmdHistory.length - 1);
+      setHistIdx(newIdx);
+      setCmd(cmdHistory[newIdx] ?? "");
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const newIdx = Math.max(histIdx - 1, -1);
+      setHistIdx(newIdx);
+      setCmd(newIdx === -1 ? "" : cmdHistory[newIdx] ?? "");
+    }
+  };
+
+  // Very basic ANSI color parser
+  const ansiToSpans = (text: string): React.ReactNode[] => {
+    const ANSI_RE = /\x1b\[([0-9;]*)m/g;
+    const COLOR_MAP: Record<string, string> = {
+      "31": "#FF5555", "32": "#50FA7B", "33": "#FFB86C", "34": "#6272A4",
+      "35": "#FF79C6", "36": "#8BE9FD", "37": "#F8F8F2", "0": "", "1": "",
+    };
+    const parts: React.ReactNode[] = [];
+    let lastIdx = 0; let match; let color = "";
+    const re = new RegExp(ANSI_RE.source, "g");
+    while ((match = re.exec(text)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(<span key={lastIdx} style={color ? { color } : {}}>{text.slice(lastIdx, match.index)}</span>);
+      }
+      const code = match[1].split(";")[0];
+      color = COLOR_MAP[code] ?? color;
+      lastIdx = match.index + match[0].length;
+    }
+    if (lastIdx < text.length) {
+      parts.push(<span key={lastIdx} style={color ? { color } : {}}>{text.slice(lastIdx)}</span>);
+    }
+    return parts.length ? parts : [text];
+  };
+
+  const QUICK = [
+    { label: "ls", cmd: "ls -la" },
+    { label: "git", cmd: "git --no-optional-locks status --short" },
+    { label: "ps", cmd: "ps aux | grep node | grep -v grep | head -5" },
+    { label: "df", cmd: "df -h /" },
+    { label: "logs", cmd: "tail -n 30 /tmp/agent.log 2>/dev/null || echo 'No agent log'" },
+    { label: "build api", cmd: "pnpm --filter @workspace/api-server run build 2>&1 | tail -20" },
+    { label: "typecheck", cmd: "pnpm --filter @workspace/enact-dashboard run typecheck 2>&1 | tail -30" },
+    { label: "uptime", cmd: "uptime && cat /proc/loadavg" },
+  ];
 
   return (
-    <div className="titan-card" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 280px)" }}>
-      <div className="flex items-center gap-2 mb-2">
-        <Terminal className="w-4 h-4 text-amber" />
-        <span className="text-xs text-muted">SHELL — cwd: project root · timeout 30s</span>
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 220px)", minHeight: 400 }}>
+      {/* Terminal title bar */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "6px 12px",
+        background: "#1a1a2e",
+        borderBottom: "1px solid rgba(0,255,255,0.15)",
+        borderRadius: "4px 4px 0 0",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["#FF5F57","#FFBD2E","#28CA41"].map((c,i) => (
+              <div key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />
+            ))}
+          </div>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: "rgba(207,255,255,0.5)" }}>
+            TITAN-94 SHELL · cwd: /home/runner/workspace · timeout 30s
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 10, color: "rgba(207,255,255,0.4)" }}>
+            {cmdHistory.length > 0 ? `${cmdHistory.length} ${S("команд","команд","commands")}` : ""}
+          </span>
+          <button
+            onClick={() => { setHistory([]); setCmdHistory([]); setHistIdx(-1); }}
+            style={{ padding: "2px 8px", fontSize: 10, fontFamily: "'Space Mono', monospace",
+              background: "transparent", border: "1px solid rgba(255,85,85,0.4)", color: "#FF5555",
+              cursor: "pointer" }}
+          >{S("CLEAR","CLEAR","CLEAR")}</button>
+        </div>
       </div>
-      <div ref={ref} className="flex-1 overflow-y-auto space-y-2 p-3 mb-3 font-mono text-xs" style={{ background: "#000", borderRadius: 4 }}>
-        {history.length === 0 && <div className="text-muted">{S("Готовий до команд. Спробуй: ls, ps, pnpm run build...", "Готов к командам. Попробуй: ls, ps, pnpm run build...", "Ready. Try: ls, ps, pnpm run build...")}</div>}
+
+      {/* Output area */}
+      <div ref={outputRef} style={{
+        flex: 1, overflowY: "auto", padding: "12px 14px",
+        background: "#0d0d1a",
+        fontFamily: "'Space Mono', monospace", fontSize: 12, lineHeight: 1.6,
+      }}>
+        {/* Startup banner */}
+        <div style={{ color: "#50FA7B", marginBottom: 12 }}>
+          {`TITAN-94 SECURE SHELL · ${new Date().toLocaleDateString("uk")} · ${S("↑↓ Навігація по історії","↑↓ Навигация по истории","↑↓ History navigation")}`}
+        </div>
+
+        {/* History items */}
         {history.map((h, i) => (
-          <div key={i}>
-            <div className={h.ok ? "text-amber" : "text-red-400"}>$ {h.cmd}</div>
-            <pre className="text-cyan-300 whitespace-pre-wrap break-all">{h.out}</pre>
+          <div key={i} style={{ marginBottom: 8 }}>
+            {/* Command line */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <span style={{ color: "#8BE9FD" }}>titan@94</span>
+              <span style={{ color: "#6272A4" }}>:</span>
+              <span style={{ color: "#FFB86C" }}>~$</span>
+              <span style={{ color: h.ok ? "#F8F8F2" : "#FF5555", wordBreak: "break-all" }}>{h.cmd}</span>
+              {h.dur != null && (
+                <span style={{ marginLeft: "auto", color: "rgba(207,255,255,0.25)", fontSize: 10, whiteSpace: "nowrap" }}>
+                  {h.dur < 1000 ? `${h.dur}ms` : `${(h.dur/1000).toFixed(1)}s`}
+                </span>
+              )}
+            </div>
+            {/* Output */}
+            <pre style={{
+              margin: 0, padding: "4px 8px",
+              color: h.ok ? "#8BE9FD" : "#FF5555",
+              whiteSpace: "pre-wrap", wordBreak: "break-all",
+              borderLeft: `2px solid ${h.ok ? "rgba(80,250,123,0.3)" : "rgba(255,85,85,0.4)"}`,
+              background: "rgba(0,0,0,0.3)",
+              fontSize: 11,
+            }}>
+              {ansiToSpans(h.out)}
+            </pre>
           </div>
         ))}
-        {busy && <div className="text-amber"><Loader2 className="w-3 h-3 inline animate-spin" /> {S("Виконую...","Выполняю...","Running...")}</div>}
+
+        {/* Busy indicator */}
+        {busy && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#FFB86C" }}>
+            <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+            <span>{S("Виконую...","Выполняю...","Running...")}</span>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {history.length === 0 && !busy && (
+          <div style={{ color: "rgba(207,255,255,0.35)", marginTop: 8 }}>
+            {S(
+              "Готовий. ↑↓ для навігації по історії. Спробуй команди нижче або введи свою.",
+              "Готов. ↑↓ для навигации по истории. Попробуй команды ниже.",
+              "Ready. ↑↓ for history navigation. Try the quick commands below.",
+            )}
+          </div>
+        )}
       </div>
-      <div className="flex gap-1 mb-2 flex-wrap">
-        {quick.map((q) => (
-          <button key={q} onClick={() => setCmd(q)} className="text-[10px] px-2 py-1 bg-black/40 border border-cyan-500/20 hover:bg-cyan-500/10">{q}</button>
+
+      {/* Quick command bar */}
+      <div style={{
+        padding: "6px 10px", background: "#111127",
+        borderTop: "1px solid rgba(0,255,255,0.08)",
+        display: "flex", flexWrap: "wrap", gap: 4,
+      }}>
+        {QUICK.map(q => (
+          <button key={q.cmd}
+            onClick={() => run(undefined, q.cmd)}
+            disabled={busy}
+            style={{
+              padding: "3px 8px", fontSize: 10,
+              fontFamily: "'Space Mono', monospace",
+              background: "rgba(0,255,255,0.05)",
+              border: "1px solid rgba(0,255,255,0.15)",
+              color: "rgba(139,233,253,0.8)",
+              cursor: "pointer", transition: "all 0.1s",
+            }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.background = "rgba(0,255,255,0.12)"; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.background = "rgba(0,255,255,0.05)"; }}
+          >{q.label}</button>
         ))}
       </div>
-      <form onSubmit={run} className="flex gap-2">
-        <span className="text-amber font-mono pt-2">$</span>
-        <input className="titan-input flex-1 font-mono" placeholder="ls -la / git status / pnpm run build ..."
-          value={cmd} onChange={(e) => setCmd(e.target.value)} disabled={busy} autoFocus />
-        <button type="submit" disabled={busy} className="titan-btn titan-btn-amber">
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />} RUN
+
+      {/* Input bar */}
+      <form onSubmit={run} style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "8px 12px", background: "#0d0d1a",
+        borderTop: "1px solid rgba(0,255,255,0.15)",
+        borderRadius: "0 0 4px 4px",
+      }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", color: "#FFB86C", fontSize: 13, userSelect: "none" }}>
+          titan@94:~$
+        </span>
+        <input
+          ref={inputRef}
+          value={cmd}
+          onChange={e => setCmd(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={busy}
+          autoFocus
+          placeholder={S("Введи команду... (↑↓ — попередні)", "Введи команду... (↑↓ — история)", "Enter command... (↑↓ history)")}
+          style={{
+            flex: 1, background: "transparent", border: "none", outline: "none",
+            fontFamily: "'Space Mono', monospace", fontSize: 12,
+            color: "#F8F8F2",
+          }}
+        />
+        <button type="submit" disabled={busy || !cmd.trim()} style={{
+          padding: "4px 14px",
+          fontFamily: "'Space Mono', monospace", fontWeight: "bold", fontSize: 11,
+          background: busy ? "rgba(255,184,46,0.1)" : "rgba(255,184,46,0.2)",
+          border: "1px solid rgba(255,184,46,0.5)",
+          color: "#FFB86C", cursor: busy ? "wait" : "pointer",
+        }}>
+          {busy ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "▶ RUN"}
         </button>
       </form>
     </div>
@@ -1302,6 +1494,264 @@ TITAN-94 provides:
           {grantText}
         </pre>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────── PROJECT EDITOR ───────────────────
+const PAGE_CONFIGS = [
+  {
+    id: "home",
+    label: "Головна (Command Center)",
+    icon: "🏠",
+    apiKey: "page_home",
+    fields: [
+      { key: "hero_title",    label: "Заголовок",    type: "text",     default: "PROTOCOL 94 · NEURAL CORE" },
+      { key: "hero_tagline",  label: "Підзаголовок", type: "textarea", default: "Суверенний AI-страж TON блокчейну" },
+      { key: "hero_badge",    label: "Бейдж статусу",type: "text",     default: "ACTIVE · SELF-LEARNING" },
+    ],
+  },
+  {
+    id: "about",
+    label: "Про проект (About)",
+    icon: "ℹ️",
+    apiKey: "page_about",
+    fields: [
+      { key: "about_title",   label: "Заголовок",    type: "text",     default: "ПРО TITAN-94" },
+      { key: "about_body",    label: "Основний текст",type: "textarea", default: "TITAN-94 — перший автономний AI-організм на блокчейні TON..." },
+    ],
+  },
+  {
+    id: "earn",
+    label: "Заробіток (Earn)",
+    icon: "💰",
+    apiKey: "page_earn",
+    fields: [
+      { key: "pro_price",     label: "Ціна PRO (TON)",   type: "text", default: "5" },
+      { key: "elite_price",   label: "Ціна ELITE (TON)", type: "text", default: "20" },
+      { key: "ref_reward",    label: "Реферальний бонус (TON)", type: "text", default: "0.1" },
+    ],
+  },
+  {
+    id: "grant",
+    label: "Грант TON",
+    icon: "🏆",
+    apiKey: "page_grant",
+    fields: [
+      { key: "grant_title",   label: "Заголовок",    type: "text",     default: "TON GRANT APPLICATION" },
+      { key: "grant_desc",    label: "Опис гранту",  type: "textarea", default: "Заявка на грант TON Foundation для розвитку TITAN-94..." },
+    ],
+  },
+];
+
+function ProjectEditorTab({ tgId, lang, toast }: { tgId: string; lang: string; toast: any }) {
+  const [selectedPage, setSelectedPage] = useState(PAGE_CONFIGS[0].id);
+  const [edits, setEdits] = useState<Record<string, Record<string, string>>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [cssMode, setCssMode] = useState(false);
+  const [customCss, setCustomCss] = useState("");
+  const [cssSaving, setCssSaving] = useState(false);
+
+  const S = (uk: string, ru: string, en: string) => lang === "uk" ? uk : lang === "ru" ? ru : en;
+
+  const page = PAGE_CONFIGS.find(p => p.id === selectedPage)!;
+
+  const getValue = (fieldKey: string) =>
+    edits[selectedPage]?.[fieldKey] ?? page.fields.find(f => f.key === fieldKey)?.default ?? "";
+
+  const setValue = (fieldKey: string, value: string) => {
+    setEdits(prev => ({
+      ...prev,
+      [selectedPage]: { ...(prev[selectedPage] || {}), [fieldKey]: value },
+    }));
+  };
+
+  const savePageConfig = async () => {
+    const pageEdits = edits[selectedPage];
+    if (!pageEdits || Object.keys(pageEdits).length === 0) {
+      toast({ title: S("Змін немає", "Нет изменений", "No changes") });
+      return;
+    }
+    setSaving(selectedPage);
+    try {
+      const r = await fetch(api("/creator/settings"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-telegram-id": tgId },
+        body: JSON.stringify({ [`${page.apiKey}`]: pageEdits }),
+      });
+      if (r.ok) {
+        setSaved(selectedPage);
+        toast({ title: S("✓ Збережено", "✓ Сохранено", "✓ Saved") });
+        setTimeout(() => setSaved(null), 2500);
+      } else {
+        toast({ title: S("Помилка збереження", "Ошибка сохранения", "Save error"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: S("Помилка з'єднання", "Ошибка соединения", "Connection error"), variant: "destructive" });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveCss = async () => {
+    setCssSaving(true);
+    try {
+      const r = await fetch(api("/creator/settings"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-telegram-id": tgId },
+        body: JSON.stringify({ custom_css: customCss }),
+      });
+      toast({ title: r.ok ? S("✓ CSS збережено","✓ CSS сохранён","✓ CSS saved") : S("Помилка","Ошибка","Error") });
+    } catch {
+      toast({ title: S("Помилка","Ошибка","Error"), variant: "destructive" });
+    } finally {
+      setCssSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="titan-live-card p-4" style={{ borderColor: "rgba(255,140,0,0.3)" }}>
+        <div className="flex items-center gap-2 mb-1">
+          <PencilLine className="w-5 h-5 text-amber" />
+          <span className="text-sm font-bold text-amber">{S("ВІЗУАЛЬНИЙ РЕДАКТОР ПРОЕКТУ","ВИЗУАЛЬНЫЙ РЕДАКТОР ПРОЕКТА","VISUAL PROJECT EDITOR")}</span>
+        </div>
+        <p className="text-xs text-muted">{S("Редагуй контент сторінок без коду. Зміни зберігаються через API.","Редактируй контент страниц без кода.","Edit page content without code. Changes are saved via API.")}</p>
+      </div>
+
+      {/* Mode switcher */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setCssMode(false)}
+          className={`titan-btn titan-btn-sm ${!cssMode ? "titan-btn-amber" : ""}`}
+          style={!cssMode ? {} : { opacity: 0.6 }}
+        >
+          <Globe className="w-3 h-3 mr-1" /> {S("Контент","Контент","Content")}
+        </button>
+        <button
+          onClick={() => setCssMode(true)}
+          className={`titan-btn titan-btn-sm ${cssMode ? "titan-btn-amber" : ""}`}
+          style={cssMode ? {} : { opacity: 0.6 }}
+        >
+          <Palette className="w-3 h-3 mr-1" /> {S("Custom CSS","Custom CSS","Custom CSS")}
+        </button>
+      </div>
+
+      {!cssMode ? (
+        <div className="grid md:grid-cols-[200px_1fr] gap-4">
+          {/* Page selector */}
+          <div className="space-y-1">
+            <div className="text-[10px] tracking-widest text-muted mb-2">{S("СТОРІНКИ","СТРАНИЦЫ","PAGES")}</div>
+            {PAGE_CONFIGS.map(pc => (
+              <button key={pc.id}
+                onClick={() => setSelectedPage(pc.id)}
+                className="w-full text-left px-3 py-2 rounded text-xs transition-all"
+                style={{
+                  background: selectedPage === pc.id ? "rgba(255,140,0,0.15)" : "rgba(0,0,0,0.2)",
+                  border: `1px solid ${selectedPage === pc.id ? "rgba(255,140,0,0.5)" : "rgba(0,255,255,0.1)"}`,
+                  color: selectedPage === pc.id ? "#FFB800" : "rgba(207,255,255,0.7)",
+                  fontFamily: "'Space Mono', monospace",
+                }}
+              >
+                <span className="mr-1">{pc.icon}</span>{pc.label}
+                {edits[pc.id] && Object.keys(edits[pc.id]).length > 0 && (
+                  <span className="ml-1 text-[9px] text-amber">●</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Fields editor */}
+          <div className="titan-card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: 20 }}>{page.icon}</span>
+                <span className="font-bold text-sm text-amber">{page.label}</span>
+              </div>
+              <button
+                onClick={savePageConfig}
+                disabled={saving === selectedPage}
+                className="titan-btn titan-btn-amber flex items-center gap-1"
+              >
+                {saving === selectedPage
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : saved === selectedPage
+                    ? <Check className="w-3.5 h-3.5" />
+                    : <Save className="w-3.5 h-3.5" />}
+                {S("Зберегти","Сохранить","Save")}
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {page.fields.map(field => (
+                <div key={field.key}>
+                  <label className="block text-[11px] font-bold tracking-widest text-muted mb-1.5">
+                    {field.type === "textarea" ? <Type className="w-3 h-3 inline mr-1" /> : <Type className="w-3 h-3 inline mr-1" />}
+                    {field.label.toUpperCase()}
+                  </label>
+                  {field.type === "textarea" ? (
+                    <textarea
+                      value={getValue(field.key)}
+                      onChange={e => setValue(field.key, e.target.value)}
+                      rows={4}
+                      className="titan-input w-full font-mono text-xs resize-y"
+                      placeholder={field.default}
+                      style={{ fontFamily: "'Space Mono', monospace", fontSize: 11 }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={getValue(field.key)}
+                      onChange={e => setValue(field.key, e.target.value)}
+                      className="titan-input w-full font-mono text-xs"
+                      placeholder={field.default}
+                      style={{ fontFamily: "'Space Mono', monospace" }}
+                    />
+                  )}
+                  <div className="text-[9px] text-muted mt-0.5">
+                    {S("Ключ","Ключ","Key")}: <span style={{ color: "rgba(0,255,255,0.5)" }}>{field.key}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Info note */}
+            <div className="mt-4 p-3 rounded text-[10px] text-muted" style={{ background: "rgba(0,255,255,0.04)", border: "1px solid rgba(0,255,255,0.1)" }}>
+              <Info className="w-3 h-3 inline mr-1 text-primary" />
+              {S(
+                "Зміни зберігаються в базі даних і застосовуються для всіх користувачів. Поточні значення — дефолтні з коду.",
+                "Изменения сохраняются в БД и применяются для всех пользователей.",
+                "Changes are saved to the database and apply to all users. Current values are code defaults.",
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* CSS Editor */
+        <div className="titan-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-amber" />
+              <span className="font-bold text-sm text-amber">CUSTOM CSS</span>
+            </div>
+            <button onClick={saveCss} disabled={cssSaving} className="titan-btn titan-btn-amber flex items-center gap-1">
+              {cssSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {S("Зберегти CSS","Сохранить CSS","Save CSS")}
+            </button>
+          </div>
+          <p className="text-xs text-muted mb-3">{S("Вводи валідний CSS. Він буде інжектований в head сторінки для всіх користувачів.","CSS будет инжектирован в head страницы для всех пользователей.","Enter valid CSS. It will be injected into the page head for all users.")}</p>
+          <textarea
+            value={customCss}
+            onChange={e => setCustomCss(e.target.value)}
+            rows={20}
+            className="titan-input w-full font-mono text-xs resize-y"
+            placeholder={`:root {\n  --titan-primary: #00FFFF;\n  --titan-bg: #060F1A;\n}\n\n.titan-card {\n  /* custom styles */\n}`}
+            spellCheck={false}
+            style={{ fontFamily: "'Fira Code', 'Space Mono', monospace", fontSize: 11, lineHeight: 1.6 }}
+          />
+        </div>
+      )}
     </div>
   );
 }

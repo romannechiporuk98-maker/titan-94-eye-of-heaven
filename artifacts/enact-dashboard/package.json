@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@tonconnect/sdk": "^3.4.1",
-    "@tonconnect/ui-react": "^2.4.4"
+    "@tonconnect/ui-react": "^2.4.4",
+    "lightweight-charts": "^5.2.0"
   }
 }

@@ -36,6 +36,8 @@ import AboutPage from "@/pages/about";
 import PrivacyPage from "@/pages/privacy";
 import TonNetworkPage from "@/pages/ton-network";
 import GrantPage from "@/pages/grant";
+import ChartsPage from "@/pages/charts";
+import TonWalletPage from "@/pages/ton-wallet";
 import { Splash } from "@/components/splash";
 import { DevModeOverlay } from "@/components/dev-mode";
 
@@ -78,6 +80,8 @@ function Router() {
         <Route path="/privacy"     component={() => <Wrap label="PRIVACY"><PrivacyPage /></Wrap>} />
         <Route path="/ton-network" component={() => <Wrap label="TON NETWORK"><TonNetworkPage /></Wrap>} />
         <Route path="/grant"       component={() => <Wrap label="TON GRANT"><GrantPage /></Wrap>} />
+        <Route path="/charts"     component={() => <Wrap label="CHARTS"><ChartsPage /></Wrap>} />
+        <Route path="/ton-wallet" component={() => <Wrap label="TON WALLET"><TonWalletPage /></Wrap>} />
         <Route path="/enact"       component={() => <Wrap label="ENACT"><Home /></Wrap>} />
         <Route path="/jobs"        component={() => <Wrap label="JOBS"><Jobs /></Wrap>} />
         <Route path="/jobs/:address" component={() => <Wrap label="JOB DETAIL"><JobDetail /></Wrap>} />
