@@ -375,7 +375,7 @@ function AiEngineerTab({ tgId, lang }: { tgId: string; lang: string }) {
 // ─────────────────── SECRETS PANEL ───────────────────
 const SECRET_GROUPS = [
   { group: "ai",       label: "🤖 AI МОДЕЛІ",          keys: ["GEMINI_API_KEY","OPENAI_API_KEY","ANTHROPIC_API_KEY","OPENROUTER_API_KEY"] },
-  { group: "telegram", label: "✈️ TELEGRAM",            keys: ["TELEGRAM_BOT_TOKEN","TELEGRAM_ADMIN_CHAT_ID"] },
+  { group: "telegram", label: "✈️ TELEGRAM",            keys: ["TELEGRAM_BOT_TOKEN","TELEGRAM_ADMIN_CHAT_ID","INTERNAL_WEBHOOK_KEY"] },
   { group: "ton",      label: "💎 TON BLOCKCHAIN",      keys: ["TON_API_KEY","TONAPI_KEY"] },
   { group: "trading",  label: "📈 BINANCE TRADING",     keys: ["BINANCE_API_KEY","BINANCE_API_SECRET"] },
   { group: "social",   label: "🐦 TWITTER / X",         keys: ["TWITTER_BEARER_TOKEN"] },

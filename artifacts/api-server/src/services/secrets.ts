@@ -16,6 +16,7 @@ const STORE = path.resolve(process.cwd(), ".titan-secrets.json");
 export const SECRET_KEYS = [
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_ADMIN_CHAT_ID",
+  "INTERNAL_WEBHOOK_KEY",
   "TON_API_KEY",
   "GEMINI_API_KEY",
   "OPENAI_API_KEY",
@@ -32,6 +33,7 @@ export type SecretKey = typeof SECRET_KEYS[number];
 const META: Record<SecretKey, { name: string; description: string; provider: string; getUrl: string; required: boolean; group: "ai" | "ton" | "telegram" | "trading" | "social"; }> = {
   TELEGRAM_BOT_TOKEN:       { name: "Telegram Bot Token",   description: "Бот /start /menu /forge /scan, push-алерти, broadcast підписникам",           provider: "@BotFather (Telegram)",  getUrl: "https://t.me/BotFather",                       required: true,  group: "telegram" },
   TELEGRAM_ADMIN_CHAT_ID:   { name: "Admin Chat ID",        description: "ID чату або каналу для сповіщень від TITAN-94 (scan-алерти, звіти, помилки). Дізнатись: @userinfobot",  provider: "@userinfobot (Telegram)",  getUrl: "https://t.me/userinfobot",  required: false, group: "telegram" },
+  INTERNAL_WEBHOOK_KEY:     { name: "Webhook Secret Key",   description: "Секретний ключ для self-call з Telegram-бота на /monetization/subscribe (Stars платежі). Генерується випадково.",  provider: "Auto-generated",         getUrl: "https://www.uuidgenerator.net/",               required: false, group: "telegram" },
   TON_API_KEY:           { name: "TonCenter API Key",  description: "Підняти ліміт сканування блоків TON з 1→10 req/sec",                provider: "@tonapibot (Telegram)",   getUrl: "https://t.me/tonapibot",                       required: false, group: "ton" },
   TONAPI_KEY:            { name: "TonAPI Pro",         description: "Деталі по Jetton/NFT, історія гаманців",                            provider: "TonConsole",              getUrl: "https://tonconsole.com",                       required: false, group: "ton" },
   GEMINI_API_KEY:        { name: "Google Gemini",      description: "Базова AI-модель: vuln-аналіз, NEXUS, AI Engineer",                provider: "Google AI Studio",        getUrl: "https://aistudio.google.com/app/apikey",        required: false, group: "ai" },
