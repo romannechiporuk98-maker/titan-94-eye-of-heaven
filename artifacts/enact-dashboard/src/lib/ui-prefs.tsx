@@ -652,6 +652,52 @@ const DICT: Dict = {
   "terminal.running":      { uk: "Виконую...",         en: "Running...",        ru: "Выполняю...",       de: "Läuft...",            tr: "Çalışıyor...",        zh: "执行中..." },
   "terminal.clear":        { uk: "Очистити",           en: "Clear",             ru: "Очистить",          de: "Löschen",             tr: "Temizle",             zh: "清除" },
   "terminal.history":      { uk: "Остання команда",    en: "Last command",      ru: "Последняя команда", de: "Letzter Befehl",      tr: "Son komut",           zh: "上次命令" },
+
+  // ── Extra buttons ────────────────────────────────────────────────────
+  "btn.retry":             { uk: "Спробувати знову",   en: "Try again",         ru: "Попробовать снова", de: "Erneut versuchen",    tr: "Tekrar dene",         zh: "重试" },
+  "btn.send_ton":          { uk: "Надіслати TON",      en: "Send TON",          ru: "Отправить TON",     de: "TON senden",          tr: "TON gönder",          zh: "发送 TON" },
+  "btn.confirm":           { uk: "Підтвердити",        en: "Confirm",           ru: "Подтвердить",       de: "Bestätigen",          tr: "Onayla",              zh: "确认" },
+  "btn.close":             { uk: "Закрити",            en: "Close",             ru: "Закрыть",           de: "Schließen",           tr: "Kapat",               zh: "关闭" },
+  "btn.open":              { uk: "Відкрити",           en: "Open",              ru: "Открыть",           de: "Öffnen",              tr: "Aç",                  zh: "打开" },
+  "btn.edit":              { uk: "Редагувати",         en: "Edit",              ru: "Редактировать",     de: "Bearbeiten",          tr: "Düzenle",             zh: "编辑" },
+  "btn.delete":            { uk: "Видалити",           en: "Delete",            ru: "Удалить",           de: "Löschen",             tr: "Sil",                 zh: "删除" },
+  "btn.add":               { uk: "Додати",             en: "Add",               ru: "Добавить",          de: "Hinzufügen",          tr: "Ekle",                zh: "添加" },
+  "btn.export":            { uk: "Експортувати",       en: "Export",            ru: "Экспортировать",    de: "Exportieren",         tr: "Dışa aktar",          zh: "导出" },
+
+  // ── Charts page additions ────────────────────────────────────────────
+  "page.charts.change24h": { uk: "24Г ЗМІНА",          en: "24H CHANGE",        ru: "ИЗМЕНЕНИЕ 24Ч",     de: "24H ÄNDERUNG",        tr: "24S DEĞİŞİM",         zh: "24H 涨跌" },
+  "page.charts.candles":   { uk: "СВІЧОК",             en: "CANDLES",           ru: "СВЕЧЕЙ",            de: "KERZEN",              tr: "MUMLAR",              zh: "蜡烛数" },
+  "page.charts.ma_info":   { uk: "MA — ковзна середня. Допомагає визначити тренд.", en: "MA — moving average. Helps identify the trend.", ru: "MA — скользящая средняя. Помогает определить тренд.", de: "MA — gleitender Durchschnitt. Hilft, den Trend zu erkennen.", tr: "MA — hareketli ortalama. Trendi belirlemeye yardımcı olur.", zh: "MA — 移动平均线，有助于识别趋势。" },
+  "page.charts.ema_info":  { uk: "EMA — зважена ковзна. Реагує швидше ніж MA.", en: "EMA — exponential moving average. Reacts faster than MA.", ru: "EMA — экспоненциальная скользящая. Реагирует быстрее MA.", de: "EMA — exponentieller gleitender Durchschnitt. Schneller als MA.", tr: "EMA — üstel hareketli ortalama. MA'dan daha hızlı tepki verir.", zh: "EMA — 指数移动平均，反应比 MA 更快。" },
+
+  // ── TON Wallet Send ──────────────────────────────────────────────────
+  "wallet.send_title":     { uk: "НАДІСЛАТИ TON",      en: "SEND TON",          ru: "ОТПРАВИТЬ TON",     de: "TON SENDEN",          tr: "TON GÖNDER",          zh: "发送 TON" },
+  "wallet.send_to":        { uk: "Адреса отримувача",  en: "Recipient address",  ru: "Адрес получателя",  de: "Empfängeradresse",    tr: "Alıcı adresi",        zh: "收款地址" },
+  "wallet.send_amount":    { uk: "Кількість TON",      en: "Amount TON",         ru: "Количество TON",    de: "TON-Betrag",          tr: "TON miktarı",         zh: "TON 数量" },
+  "wallet.send_comment":   { uk: "Коментар (опційно)", en: "Comment (optional)", ru: "Комментарий (необязательно)", de: "Kommentar (optional)", tr: "Yorum (isteğe bağlı)", zh: "备注（可选）" },
+  "wallet.send_min":       { uk: "Мінімум: 0.01 TON", en: "Minimum: 0.01 TON", ru: "Минимум: 0.01 TON", de: "Minimum: 0.01 TON",  tr: "Minimum: 0.01 TON",   zh: "最少: 0.01 TON" },
+  "wallet.send_confirm":   { uk: "Відправити через TON Connect", en: "Send via TON Connect", ru: "Отправить через TON Connect", de: "Via TON Connect senden", tr: "TON Connect ile gönder", zh: "通过 TON Connect 发送" },
+  "wallet.send_success":   { uk: "✓ Транзакція підписана! Очікуй підтвердження мережею.", en: "✓ Transaction signed! Wait for network confirmation.", ru: "✓ Транзакция подписана! Ожидай подтверждения сети.", de: "✓ Transaktion signiert! Auf Netzwerkbestätigung warten.", tr: "✓ İşlem imzalandı! Ağ onayını bekle.", zh: "✓ 交易已签名！等待网络确认。" },
+  "wallet.send_tab":       { uk: "Надіслати",          en: "Send",              ru: "Отправить",         de: "Senden",              tr: "Gönder",              zh: "发送" },
+  "wallet.send_addr_hint": { uk: "EQ... або UQ... TON адреса", en: "EQ... or UQ... TON address", ru: "EQ... или UQ... TON адрес", de: "EQ... oder UQ... TON-Adresse", tr: "EQ... veya UQ... TON adresi", zh: "EQ... 或 UQ... TON 地址" },
+
+  // ── Project Editor extra pages ────────────────────────────────────────
+  "editor.pages":          { uk: "СТОРІНКИ",           en: "PAGES",             ru: "СТРАНИЦЫ",          de: "SEITEN",              tr: "SAYFALAR",            zh: "页面" },
+  "editor.save_all":       { uk: "Зберегти всі",       en: "Save all",          ru: "Сохранить все",     de: "Alle speichern",      tr: "Hepsini kaydet",      zh: "全部保存" },
+  "editor.no_changes":     { uk: "Змін немає",         en: "No changes",        ru: "Нет изменений",     de: "Keine Änderungen",    tr: "Değişiklik yok",      zh: "无变更" },
+  "editor.field_key":      { uk: "Ключ",               en: "Key",               ru: "Ключ",              de: "Schlüssel",           tr: "Anahtar",             zh: "键" },
+  "editor.hint":           { uk: "Зміни зберігаються в БД і застосовуються для всіх користувачів.", en: "Changes are saved to DB and apply to all users.", ru: "Изменения сохраняются в БД для всех пользователей.", de: "Änderungen werden in der DB gespeichert.", tr: "Değişiklikler veri tabanına kaydedilir.", zh: "更改保存到数据库并对所有用户生效。" },
+  "editor.css_hint":       { uk: "Вводь валідний CSS. Він буде інжектований у head сторінки.", en: "Enter valid CSS. It will be injected into the page head.", ru: "Введи валидный CSS. Будет инжектирован в head страницы.", de: "Gültiges CSS eingeben. Wird in den head der Seite injiziert.", tr: "Geçerli CSS girin. Sayfanın head'ine eklenir.", zh: "输入有效 CSS，将注入页面 head。" },
+
+  // ── Common missing ───────────────────────────────────────────────────
+  "common.ton":            { uk: "TON",                en: "TON",               ru: "TON",               de: "TON",                 tr: "TON",                 zh: "TON" },
+  "common.wallet":         { uk: "Гаманець",           en: "Wallet",            ru: "Кошелёк",           de: "Wallet",              tr: "Cüzdan",              zh: "钱包" },
+  "common.amount":         { uk: "Сума",               en: "Amount",            ru: "Сумма",             de: "Betrag",              tr: "Miktar",              zh: "金额" },
+  "common.recipient":      { uk: "Отримувач",          en: "Recipient",         ru: "Получатель",        de: "Empfänger",           tr: "Alıcı",               zh: "收款人" },
+  "common.tx":             { uk: "Транзакція",         en: "Transaction",       ru: "Транзакция",        de: "Transaktion",         tr: "İşlem",               zh: "交易" },
+  "common.hash":           { uk: "Хеш",                en: "Hash",              ru: "Хэш",               de: "Hash",                tr: "Hash",                zh: "哈希" },
+  "common.fee":            { uk: "Комісія",            en: "Fee",               ru: "Комиссия",          de: "Gebühr",              tr: "Ücret",               zh: "手续费" },
+  "common.sign_in_wallet": { uk: "Підпиши в гаманці",  en: "Sign in wallet",    ru: "Подпиши в кошельке",de: "In Wallet bestätigen",tr: "Cüzdanda imzala",    zh: "在钱包中签名" },
 };
 
 export function t(key: string, lang: Lang): string {

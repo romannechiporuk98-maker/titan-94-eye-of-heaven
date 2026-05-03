@@ -9,6 +9,7 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import * as creator from "../services/creator";
 import * as store from "../services/store";
+import { exec } from "child_process";
 
 const router: IRouter = Router();
 
@@ -220,6 +221,32 @@ router.post("/creator/cycle/run/:cycle", requireCreator, async (req, res) => {
 router.get("/creator/public-settings", async (_req, res) => {
   const s = await creator.getSettings();
   res.json({ navVisibility: s.navVisibility || {} });
+});
+
+// ─── Shell exec (terminal) ───────────────────────────────────────────────
+router.post("/creator/exec", requireCreator, (req: Request, res: Response) => {
+  const { command, timeout: timeoutMs = 30000 } = req.body || {};
+  if (!command || typeof command !== "string") {
+    return res.status(400).json({ error: "command required" });
+  }
+  const BLOCKED = /rm\s+-rf\s+\/|mkfs|dd\s+if=|fork\s*bomb|:(){ :|:& };:/i;
+  if (BLOCKED.test(command)) {
+    return res.status(403).json({ error: "Command blocked for safety" });
+  }
+  const t0 = Date.now();
+  exec(
+    command,
+    { cwd: "/home/runner/workspace", timeout: Math.min(Number(timeoutMs), 60000), maxBuffer: 1024 * 512 },
+    (err, stdout, stderr) => {
+      res.json({
+        stdout: stdout || "",
+        stderr: stderr || "",
+        exitCode: err?.code ?? (err ? 1 : 0),
+        signal: (err as any)?.signal ?? null,
+        duration: Date.now() - t0,
+      });
+    }
+  );
 });
 
 // ─── Developer mode purchase ────────────────────────────────────────────

@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Wallet, RefreshCw, ExternalLink, Copy, Image as ImageIcon,
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  CircleDollarSign, Gem, History, ShieldCheck,
+  CircleDollarSign, Gem, History, ShieldCheck, Send, Loader2, AlertCircle,
 } from "lucide-react";
-import { TonConnectButton, useTonAddress, useTonWallet } from "@tonconnect/ui-react";
+import { TonConnectButton, useTonAddress, useTonWallet, useTonConnectUI } from "@tonconnect/ui-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang, t, type Lang } from "@/lib/ui-prefs";
 import { haptic } from "@/lib/telegram";
@@ -363,8 +363,168 @@ function TxPanel({ txData, address, lang }: { txData: any; address: string; lang
   );
 }
 
+// ── Send TON panel ────────────────────────────────────────────────────────────
+function SendTonPanel({ balance, lang, toast }: { balance: number | null; lang: Lang; toast: any }) {
+  const [tonConnectUI] = useTonConnectUI();
+  const [to,      setTo]      = useState("");
+  const [amount,  setAmount]  = useState("");
+  const [comment, setComment] = useState("");
+  const [busy,    setBusy]    = useState(false);
+  const [ok,      setOk]      = useState(false);
+
+  const send = async (e: FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(amount);
+    if (!to.trim() || !amt || amt < 0.01) return;
+    haptic("medium");
+    setBusy(true);
+    setOk(false);
+    try {
+      const nanoAmt = Math.floor(amt * 1e9).toString();
+      const payload: any = {
+        validUntil: Math.floor(Date.now() / 1000) + 300,
+        messages: [{
+          address: to.trim(),
+          amount: nanoAmt,
+          ...(comment.trim() ? {
+            payload: btoa(
+              "\x00\x00\x00\x00" +
+              Array.from(new TextEncoder().encode(comment.trim())).map(b => String.fromCharCode(b)).join("")
+            ),
+          } : {}),
+        }],
+      };
+      await tonConnectUI.sendTransaction(payload);
+      setOk(true);
+      haptic("success");
+      toast({ title: t("wallet.send_success", lang) });
+      setTo(""); setAmount(""); setComment("");
+    } catch (err: any) {
+      haptic("error");
+      toast({ title: `× ${err?.message || t("common.error", lang)}`, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={send} className="space-y-4">
+      <div style={{ padding: "12px 16px", background: "rgba(0,136,204,0.07)", border: "1px solid rgba(0,136,204,0.25)", borderRadius: 6, display: "flex", alignItems: "center", gap: 10 }}>
+        <Send className="w-5 h-5 shrink-0" style={{ color: "#0088CC" }} />
+        <div>
+          <div className="text-sm font-bold" style={{ color: "#0088CC" }}>{t("wallet.send_title", lang)}</div>
+          {balance != null && (
+            <div className="text-[10px] text-muted">{t("wallet.total_balance", lang)}: {fmtTon(balance)} TON</div>
+          )}
+        </div>
+      </div>
+
+      {/* Recipient */}
+      <div>
+        <label className="block text-[11px] tracking-widest text-muted mb-1.5 font-bold">
+          {t("wallet.send_to", lang).toUpperCase()}
+        </label>
+        <input
+          type="text"
+          value={to}
+          onChange={e => setTo(e.target.value)}
+          required
+          placeholder={t("wallet.send_addr_hint", lang)}
+          className="titan-input w-full font-mono text-xs"
+          style={{ fontFamily: "'Space Mono', monospace" }}
+        />
+      </div>
+
+      {/* Amount */}
+      <div>
+        <label className="block text-[11px] tracking-widest text-muted mb-1.5 font-bold">
+          {t("wallet.send_amount", lang).toUpperCase()}
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            required
+            min="0.01"
+            step="0.01"
+            placeholder="0.00"
+            className="titan-input flex-1 font-mono text-sm"
+            style={{ fontFamily: "'Space Mono', monospace" }}
+          />
+          <span className="text-sm font-bold" style={{ color: "#0088CC" }}>TON</span>
+        </div>
+        <div className="text-[9px] text-muted mt-0.5">{t("wallet.send_min", lang)}</div>
+        {/* Quick amount buttons */}
+        <div className="flex gap-1.5 mt-2">
+          {["0.5", "1", "5", "10"].map(q => (
+            <button key={q} type="button"
+              onClick={() => setAmount(q)}
+              className="titan-btn titan-btn-sm text-[10px]"
+              style={{ padding: "2px 8px", opacity: amount === q ? 1 : 0.6 }}>
+              {q}
+            </button>
+          ))}
+          {balance != null && (
+            <button type="button"
+              onClick={() => setAmount(Math.max(0, balance - 0.05).toFixed(4))}
+              className="titan-btn titan-btn-sm text-[10px]"
+              style={{ padding: "2px 8px" }}>
+              MAX
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Comment */}
+      <div>
+        <label className="block text-[11px] tracking-widest text-muted mb-1.5 font-bold">
+          {t("wallet.send_comment", lang).toUpperCase()}
+        </label>
+        <input
+          type="text"
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder={t("wallet.send_comment", lang)}
+          maxLength={120}
+          className="titan-input w-full text-xs"
+        />
+      </div>
+
+      {/* Warning */}
+      <div className="flex items-start gap-2 p-3 rounded text-[10px]"
+        style={{ background: "rgba(255,140,0,0.05)", border: "1px solid rgba(255,140,0,0.2)" }}>
+        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#FF8C00" }} />
+        <span className="text-muted">{t("common.sign_in_wallet", lang)}</span>
+      </div>
+
+      {/* Submit */}
+      <button type="submit" disabled={busy || !to.trim() || !amount}
+        className="titan-btn w-full flex items-center justify-center gap-2 py-2.5"
+        style={{
+          background: "rgba(0,136,204,0.15)",
+          border: "1px solid rgba(0,136,204,0.5)",
+          color: "#0088CC",
+          fontWeight: "bold",
+          opacity: busy || !to.trim() || !amount ? 0.5 : 1,
+        }}>
+        {busy
+          ? <Loader2 className="w-4 h-4 animate-spin" />
+          : <Send className="w-4 h-4" />}
+        {busy ? t("common.loading", lang) : t("wallet.send_confirm", lang)}
+      </button>
+
+      {ok && (
+        <div className="text-xs text-center p-2 rounded" style={{ background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.25)", color: "#00FF88" }}>
+          ✓ {t("wallet.send_success", lang)}
+        </div>
+      )}
+    </form>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
-type WalletTab = "overview" | "tokens" | "nfts" | "history";
+type WalletTab = "overview" | "tokens" | "nfts" | "history" | "send";
 
 export default function TonWalletPage() {
   const { lang } = useLang();
@@ -387,11 +547,14 @@ export default function TonWalletPage() {
     toast({ title: "✓ Скопійовано" });
   };
 
+  const tonBalance = account?.balance != null ? nanoToTon(account.balance) : null;
+
   const tabs: { key: WalletTab; label: string; icon: any; count?: number }[] = [
     { key: "overview",  label: t("wallet.tab.overview", lang),  icon: Wallet },
     { key: "tokens",    label: t("wallet.tab.tokens", lang),    icon: CircleDollarSign, count: jettons?.balances?.length },
     { key: "nfts",      label: t("wallet.tab.nfts", lang),      icon: Gem,              count: nfts?.nft_items?.length },
     { key: "history",   label: t("wallet.tab.history", lang),   icon: History,          count: txs?.events?.length },
+    { key: "send",      label: t("wallet.send_tab", lang),       icon: Send },
   ];
 
   return (
@@ -509,6 +672,10 @@ export default function TonWalletPage() {
 
             {tab === "history" && (
               <TxPanel txData={txs} address={address} lang={lang} />
+            )}
+
+            {tab === "send" && (
+              <SendTonPanel balance={tonBalance} lang={lang} toast={toast} />
             )}
           </div>
         </>
