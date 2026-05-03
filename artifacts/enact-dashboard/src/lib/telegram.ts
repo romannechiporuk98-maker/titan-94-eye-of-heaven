@@ -39,19 +39,25 @@ export function getWebApp(): any {
 
 export function initTelegram(): TgUser {
   if (cached) return cached;
-  // Dev override: ?_dev_tg=<id>
-  if (typeof window !== "undefined") {
+
+  const wa = getWebApp();
+
+  // ── Dev override: ?_dev_tg=<id> — only respected outside real TMA ──────────
+  // In production build, never accept dev override (compiled-out by Vite tree-shaking)
+  if (typeof window !== "undefined" && !import.meta.env.PROD) {
     try {
       const params = new URLSearchParams(window.location.search);
       const dev = params.get("_dev_tg");
-      if (dev) {
+      // Only use dev override if there is no real Telegram session
+      if (dev && !(wa?.initDataUnsafe?.user)) {
         cached = { id: dev, name: dev === "7255058720" ? "Roman (Creator)" : `Dev ${dev}`, isReal: false };
         return cached;
       }
     } catch {}
   }
-  const wa = getWebApp();
+
   if (!wa) { cached = DEMO; return DEMO; }
+
   try {
     wa.ready();
     wa.expand();
@@ -62,6 +68,7 @@ export function initTelegram(): TgUser {
     wa.enableClosingConfirmation?.();
     wa.disableVerticalSwipes?.(); // prevent accidental close
   } catch {}
+
   const u = wa.initDataUnsafe?.user;
   if (u && u.id) {
     cached = {
@@ -73,6 +80,10 @@ export function initTelegram(): TgUser {
       startParam: wa.initDataUnsafe?.start_param,
       languageCode: u.language_code,
     };
+  } else if (wa.initData && wa.initData.length > 0) {
+    // WebApp exists and has initData but user not parsed yet — treat as real
+    // (happens briefly while TG is still initializing)
+    cached = { id: "tg_loading", name: "Loading…", isReal: true };
   } else {
     cached = DEMO;
   }

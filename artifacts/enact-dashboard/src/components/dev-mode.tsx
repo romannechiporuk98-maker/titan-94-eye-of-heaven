@@ -1,14 +1,10 @@
 /**
- * DEV MODE SELECTOR — з'являється тільки в браузері (не в Telegram).
+ * DEV MODE SELECTOR — показується ТІЛЬКИ в режимі розробки (не в production).
  *
- * Проблема: поза Telegram getTgUser() повертає { id: "demo_user", isReal: false }.
- * Це блокує creator-сторінку, кнопки не відпрацьовують бо ID невірний.
- *
- * Рішення: банер у нижній частині екрану з кнопками симуляції різних юзерів.
- * Кнопка додає ?_dev_tg=<ID> до URL → telegram.ts підхоплює його → app
+ * В production (deployed) цей компонент повністю відключений.
+ * В dev-режимі (локально, поза Telegram) дозволяє симулювати різних юзерів.
+ * Кнопка додає ?_dev_tg=<ID> до URL → telegram.ts підхоплює → app
  * поводиться як ніби зайшов реальний TG-юзер з цим ID.
- *
- * НЕ впливає на production (Telegram): `isReal === true` → банер прихований.
  */
 import { useState, useEffect } from "react";
 import { getTgUser } from "@/lib/telegram";
@@ -24,6 +20,8 @@ const SIM_USERS: SimUser[] = [
   { id: "1000000099", label: "Developer",        icon: Code2,  color: "#A855F7", badge: "DEV"     },
 ];
 
+const DISMISSED_KEY = "titan94.devmode.dismissed";
+
 function getCurrentDevId(): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get("_dev_tg");
@@ -37,14 +35,19 @@ function switchUser(id: string | null) {
 }
 
 export function DevModeOverlay() {
+  // ─── PRODUCTION GUARD: never show in production ───────────────────────────
+  if (import.meta.env.PROD) return null;
+
   const user = getTgUser();
   const [open, setOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try { return !!window.localStorage.getItem(DISMISSED_KEY); } catch { return false; }
+  });
 
   const currentDevId = getCurrentDevId();
   const currentSim = SIM_USERS.find(u => u.id === currentDevId);
 
-  // Якщо реальний Telegram або банер закрито — нічого не показуємо
+  // Also hide if this is a real Telegram session (even in dev)
   if (user.isReal || dismissed) return null;
 
   return (
@@ -133,10 +136,14 @@ export function DevModeOverlay() {
             : <ChevronUp   className="w-4 h-4" style={{ color: "rgba(255,140,0,0.7)" }} />
           }
           <button
-            onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              try { window.localStorage.setItem(DISMISSED_KEY, "1"); } catch {}
+              setDismissed(true);
+            }}
             className="p-0.5 hover:text-white transition-colors"
             style={{ color: "rgba(207,255,255,0.3)" }}
-            title="Сховати"
+            title="Сховати назавжди"
           >
             <X className="w-3 h-3" />
           </button>

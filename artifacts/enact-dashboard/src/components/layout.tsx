@@ -305,12 +305,26 @@ function PrefsCluster({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Returns true when running inside a real Telegram Mini App context */
+function useIsTMA(): boolean {
+  const [isTMA, setIsTMA] = useState(false);
+  useEffect(() => {
+    try {
+      const wa = (window as any).Telegram?.WebApp;
+      // isExpanded or initDataUnsafe.user being present means real TMA
+      setIsTMA(!!(wa?.initDataUnsafe?.user || wa?.initData));
+    } catch {}
+  }, []);
+  return isTMA;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [infoItem,   setInfoItem]   = useState<NavItem | null>(null);
   const { lang } = useLang();
   const navVis = useNavVisibility();
+  const isTMA  = useIsTMA();
 
   useEffect(() => { setDrawerOpen(false); }, [location]);
   useEffect(() => {
@@ -474,29 +488,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* MAIN AREA */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0" style={{ background: "#030D18" }}>
 
-        {/* MOBILE TOP BAR */}
-        <div className="md:hidden h-12 flex items-center px-3 border-b shrink-0 z-40 gap-2"
-          style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)" }}>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="p-2 -ml-1 rounded text-cyan-400 hover:bg-cyan-400/10"
-            aria-label={t("btn.menu_open", lang)}
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold leading-none" style={{ color: "#00FFFF" }}>◈ TITAN-94</span>
-            <span className="text-[8px] tracking-widest leading-tight mt-0.5" style={{ color: "rgba(0,255,255,0.4)" }}>{t("tag.security", lang)}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <TonWalletChip compact />
-            <PrefsCluster compact />
-            <div className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
-              <span className="text-[10px]" style={{ color: "#00FF88" }}>{t("tag.live", lang)}</span>
+        {/* MOBILE TOP BAR — hidden in TMA (Telegram has its own header) */}
+        {!isTMA && (
+          <div className="md:hidden h-12 flex items-center px-3 border-b shrink-0 z-40 gap-2"
+            style={{ background: "#060F1A", borderColor: "rgba(0,255,255,0.15)" }}>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="p-2 -ml-1 rounded text-cyan-400 hover:bg-cyan-400/10"
+              aria-label={t("btn.menu_open", lang)}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold leading-none" style={{ color: "#00FFFF" }}>◈ TITAN-94</span>
+              <span className="text-[8px] tracking-widest leading-tight mt-0.5" style={{ color: "rgba(0,255,255,0.4)" }}>{t("tag.security", lang)}</span>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <TonWalletChip compact />
+              <PrefsCluster compact />
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
+                <span className="text-[10px]" style={{ color: "#00FF88" }}>{t("tag.live", lang)}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* TMA TOP STRIP — ultra-slim bar with menu + wallet for TMA */}
+        {isTMA && (
+          <div className="md:hidden h-10 flex items-center px-3 shrink-0 z-40 gap-2"
+            style={{ background: "#060F1A", borderBottom: "1px solid rgba(0,255,255,0.1)" }}>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="p-1.5 -ml-1 rounded text-cyan-400 hover:bg-cyan-400/10"
+              aria-label={t("btn.menu_open", lang)}
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold" style={{ color: "#00FFFF" }}>◈ TITAN-94</span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <TonWalletChip compact />
+              <PrefsCluster compact />
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00FF88" }} />
+            </div>
+          </div>
+        )}
 
         {/* DESKTOP TOP BAR */}
         <div className="hidden md:flex h-10 items-center justify-end px-4 border-b shrink-0 z-40 gap-2"
@@ -505,7 +541,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <PrefsCluster />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto tma-scroll">
           {children}
         </div>
       </main>

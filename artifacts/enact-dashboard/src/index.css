@@ -579,3 +579,48 @@ html[data-theme="light"] [style*="rgba(207,255,255,0.25)"]{ color: rgba(27,37,48
 html[data-theme="light"] [style*="repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03)"] {
   display: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════
+   TELEGRAM MINI APP — Safe Area & Viewport Fixes
+   ══════════════════════════════════════════════════════════ */
+
+/* iOS / TMA safe area insets */
+:root {
+  --tma-safe-top:    env(safe-area-inset-top,    0px);
+  --tma-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tma-safe-left:   env(safe-area-inset-left,   0px);
+  --tma-safe-right:  env(safe-area-inset-right,  0px);
+}
+
+/* Make html/body fill Telegram's actual viewport (no address bar bounce) */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* TMA bottom safe area — added dynamically via .tma-safe class on layout */
+.tma-main-content {
+  padding-bottom: var(--tma-safe-bottom);
+}
+
+/* Mobile page padding — tighter on phones */
+@media (max-width: 767px) {
+  .titan-page {
+    padding: 1rem;
+  }
+}
+
+/* Scrollable inner areas must account for safe area */
+.tma-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: max(1rem, var(--tma-safe-bottom));
+}
