@@ -13,6 +13,9 @@
     "intervalMin": 5,
     "enabled": true,
     "memory": [
+      "[2026-05-03T20:47:11.404Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 57 critical, 80 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
+      "[2026-05-03T20:41:11.402Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 80 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
+      "[2026-05-03T20:35:11.399Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 79 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-05-03T20:29:11.397Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 78 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-05-03T20:23:11.395Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 78 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-05-03T20:17:11.393Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 78 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
@@ -59,18 +62,15 @@
       "[2026-05-02T23:24:17.138Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-05-02T23:19:17.081Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
       "[2026-05-02T23:14:17.064Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
-      "[2026-05-02T23:09:17.034Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
-      "[2026-05-02T23:04:17.009Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
-      "[2026-05-02T22:59:16.978Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
-      "[2026-05-02T22:54:16.952Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 53 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done"
+      "[2026-05-02T23:09:17.034Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 54 critical, 71 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done"
     ],
-    "runs": 276,
-    "successes": 276,
+    "runs": 279,
+    "successes": 279,
     "failures": 0,
-    "lastRunAt": "2026-05-03T20:29:11.410Z",
-    "nextRunAt": "2026-05-03T20:34:11.410Z",
-    "lastOutput": "[2026-05-03T20:29:11.397Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 56 critical, 78 high, 0 active\n  ✓ telegram-notify: notified creator\n✓ done",
+    "lastRunAt": "2026-05-03T20:47:11.415Z",
+    "nextRunAt": "2026-05-03T20:52:11.415Z",
+    "lastOutput": "[2026-05-03T20:47:11.404Z] running \"My Test Guardian\"\n  goal: Notify me\n  tools: ton-scan, telegram-notify\n  ✓ ton-scan: 57 critical, 80 high, 1 active\n  ✓ telegram-notify: notified creator\n✓ done",
     "createdAt": "2026-04-29T13:18:36.888Z",
-    "updatedAt": "2026-05-03T20:29:11.410Z"
+    "updatedAt": "2026-05-03T20:47:11.415Z"
   }
 ]
